@@ -1,53 +1,20 @@
-# Global / OS Clean Up
+# Dependencies
+frontend/node_modules/
+backend/node_modules/
+
+# Environment
+backend/.env
+
+# Build output
+frontend/dist/
+backend/dist/
+
+# Logs
+*.log
+
+# OS files
 .DS_Store
 Thumbs.db
-*.log
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
 
-# Dependencies 
-node_modules/
-backend/node_modules/
-frontend/node_modules/
-jspm_packages/
-web_modules/
-
-# Build Outputs (Compiled files)
-dist/
-frontend/dist/
-build/
-out/
-.next/
-.nuxt/
-
-# Environments & Secrets
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env
-backend/.env
-frontend/.env
-
-# 
-# IDE / Text Editor Configurations
-.idea/
-.vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
-.project
-.classpath
-.settings/
-
-# Testing & Coverage reports
-coverage/
-.nyc_output/
-htmlcov/
-
+# Editor
+.vscode/settings.json
