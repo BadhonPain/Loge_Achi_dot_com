@@ -1,8 +1,12 @@
-import React from 'react';
-import { Search, ShoppingBag, User, Menu, Heart } from 'lucide-react';
+import React, { useContext, useState } from 'react';
+import { Search, ShoppingBag, User, Menu, Heart, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
 
 const Navbar = () => {
+  const { user, logout } = useContext(AuthContext);
+  const [showDropdown, setShowDropdown] = useState(false);
+
   return (
     <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-100">
       {/* Top Utility Bar - Very subtle */}
@@ -55,9 +59,40 @@ const Navbar = () => {
             <Heart size={22} strokeWidth={1.5} />
           </Link>
           
-          <Link to="/account" className="p-2 text-gray-600 hover:text-primary transition-colors">
-            <User size={22} strokeWidth={1.5} />
-          </Link>
+          {/* User Auth Section */}
+          <div className="relative">
+            {user ? (
+              <div 
+                className="flex items-center gap-2 cursor-pointer group"
+                onClick={() => setShowDropdown(!showDropdown)}
+              >
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-gray-700 hidden lg:block group-hover:text-primary transition-colors">
+                  Hi, {user.name.split(' ')[0]}
+                </span>
+                
+                {/* Dropdown */}
+                {showDropdown && (
+                  <div className="absolute top-12 right-0 w-48 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-50">
+                    <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">My Account</Link>
+                    <Link to="/orders" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">My Orders</Link>
+                    <button 
+                      onClick={logout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <LogOut size={16} /> Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link to="/login" className="p-2 text-gray-600 hover:text-primary transition-colors">
+                <User size={22} strokeWidth={1.5} />
+              </Link>
+            )}
+          </div>
           
           <Link to="/cart" className="p-2 text-gray-600 hover:text-primary transition-colors relative flex items-center gap-2">
             <div className="relative">

@@ -7,6 +7,7 @@ const addressRoutes = require("./routes/addressRoutes");
 const express = require("express");
 const cors = require("cors");
 const cartRoutes = require("./routes/cartRoutes");
+const authRoutes = require("./routes/authRoutes");
 const db = require("./config/db");
 
 const app = express();
@@ -22,8 +23,9 @@ app.use("/api/sellers", sellerRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/customers", customerRoutes);
 
-app.use("/api/customers", addressRoutes);
+app.use("/api/addresses", addressRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/auth", authRoutes);
 // Basic route
 app.get("/", (req, res) => {
     res.json({
