@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from '../components/layout/Navbar';
 import CategoryMenu from '../components/home/CategoryMenu';
 import HeroSlider from '../components/home/HeroSlider';
+import FlashSale from '../components/home/FlashSale';
 import { Truck, ShieldCheck, HeadphonesIcon, CreditCard, ArrowRight } from 'lucide-react';
 
 const HomePage = () => {
@@ -101,6 +102,10 @@ const HomePage = () => {
             </div>
           </div>
         </section>
+
+        {/* Level 3: Flash Sales Section */}
+        <FlashSale />
+
       </main>
     </div>
   );
