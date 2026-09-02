@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 
 const categories = [
-  { id: 1, name: 'Smartphones', image: 'https://images.unsplash.com/photo-1598327105666-5b89351cb315?q=80&w=200&auto=format&fit=crop' },
+  { id: 1, name: 'Smartphones', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=200&auto=format&fit=crop' },
   { id: 2, name: 'Men\'s Sneakers', image: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?q=80&w=200&auto=format&fit=crop' },
   { id: 3, name: 'Beauty & Skincare', image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=200&auto=format&fit=crop' },
   { id: 4, name: 'Laptops', image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=200&auto=format&fit=crop' },
