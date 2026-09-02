@@ -28,14 +28,23 @@ const Navbar = () => {
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-8">
         
-        {/* Elegant Logo */}
-        <Link to="/" className="flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-orange-400 flex items-center justify-center text-white font-serif font-bold text-xl shadow-lg shadow-orange-500/30">
-            L
+        {/* Professional Logo */}
+        <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+          {/* Logo Icon */}
+          <div className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-orange-500 shadow-lg shadow-primary/20 group-hover:shadow-primary/40 group-hover:-translate-y-0.5 transition-all duration-300">
+            <span className="text-white font-black text-xl tracking-tighter italic">LA</span>
+            {/* Active Dot Indicator */}
+            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full transition-colors"></div>
           </div>
-          <span className="text-2xl font-extrabold tracking-tighter text-gray-900 hidden sm:block">
-            Loge<span className="text-primary">Achi</span>.
-          </span>
+          {/* Logo Text */}
+          <div className="hidden sm:flex flex-col justify-center">
+            <span className="text-2xl font-black tracking-tighter leading-none text-gray-900 dark:text-white transition-colors">
+              Loge<span className="text-primary">Achi</span><span className="text-gray-400 dark:text-gray-500 text-lg">.com</span>
+            </span>
+            <span className="text-[9px] font-bold tracking-[0.2em] text-gray-400 dark:text-gray-500 uppercase leading-none mt-1 transition-colors">
+              The Premium Marketplace
+            </span>
+          </div>
         </Link>
 
         {/* Sleek Search Bar */}
