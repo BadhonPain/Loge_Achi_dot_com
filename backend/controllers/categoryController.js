@@ -1,0 +1,181 @@
+const db = require("../config/db");
+
+
+// GET ALL CATEGORIES
+const getAllCategories = async (req, res) => {
+    try {
+        const [categories] = await db.query(`
+            SELECT
+                category_id,
+                parent_category_id,
+                category_name,
+                description,
+                status,
+                created_at
+            FROM categories
+            ORDER BY category_name ASC
+        `);
+
+        res.status(200).json({
+            success: true,
+            count: categories.length,
+            data: categories
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch categories"
+        });
+    }
+};
+
+
+// GET ONE CATEGORY
+const getCategoryById = async (req, res) => {
+    try {
+        const categoryId = req.params.id;
+
+        const [categories] = await db.query(`
+            SELECT *
+            FROM categories
+            WHERE category_id = ?
+        `, [categoryId]);
+
+        if (categories.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: categories[0]
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch category"
+        });
+    }
+};
+
+
+// CREATE CATEGORY
+const createCategory = async (req, res) => {
+    try {
+        const {
+            parent_category_id,
+            category_name,
+            description
+        } = req.body;
+
+        if (!category_name) {
+            return res.status(400).json({
+                success: false,
+                message: "category_name is required"
+            });
+        }
+
+        const [result] = await db.query(`
+            INSERT INTO categories
+            (
+                parent_category_id,
+                category_name,
+                description,
+                status
+            )
+            VALUES (?, ?, ?, 'ACTIVE')
+        `, [
+            parent_category_id || null,
+            category_name,
+            description || null
+        ]);
+
+        res.status(201).json({
+            success: true,
+            message: "Category created successfully",
+            category_id: result.insertId
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        if (error.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({
+                success: false,
+                message: "Category already exists"
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to create category"
+        });
+    }
+};
+
+
+// UPDATE CATEGORY
+const updateCategory = async (req, res) => {
+    try {
+        const categoryId = req.params.id;
+
+        const {
+            parent_category_id,
+            category_name,
+            description,
+            status
+        } = req.body;
+
+        const [result] = await db.query(`
+            UPDATE categories
+            SET
+                parent_category_id = ?,
+                category_name = ?,
+                description = ?,
+                status = ?
+            WHERE category_id = ?
+        `, [
+            parent_category_id || null,
+            category_name,
+            description || null,
+            status,
+            categoryId
+        ]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Category updated successfully"
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to update category"
+        });
+    }
+};
+
+
+module.exports = {
+    getAllCategories,
+    getCategoryById,
+    createCategory,
+    updateCategory
+};
