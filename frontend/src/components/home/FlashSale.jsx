@@ -1,66 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Timer, ArrowRight, ChevronRight, ChevronLeft } from 'lucide-react';
 import ProductCard from '../common/ProductCard';
+import { getFlashSaleProducts } from '../../data/products';
 
-// Dummy data for Flash Sale
-const flashSaleProducts = [
-  {
-    id: 1,
-    title: 'Sony WH-1000XM5 Wireless Noise Canceling Headphones',
-    category: 'Electronics',
-    price: 35000,
-    oldPrice: 42000,
-    discount: 16,
-    rating: 5,
-    reviews: 124,
-    image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?q=80&w=400&auto=format&fit=crop'
-  },
-  {
-    id: 2,
-    title: 'Minimalist Ceramic Coffee Mug - Matte Black',
-    category: 'Home & Living',
-    price: 850,
-    oldPrice: 1200,
-    discount: 29,
-    rating: 4,
-    reviews: 56,
-    image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=400&auto=format&fit=crop'
-  },
-  {
-    id: 3,
-    title: 'Apple Watch Series 9 GPS 41mm',
-    category: 'Wearables',
-    price: 45000,
-    oldPrice: 50000,
-    discount: 10,
-    isNew: true,
-    rating: 5,
-    reviews: 89,
-    image: 'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?q=80&w=400&auto=format&fit=crop'
-  },
-  {
-    id: 4,
-    title: 'Premium Leather Crossbody Bag',
-    category: 'Fashion',
-    price: 4500,
-    oldPrice: 6500,
-    discount: 30,
-    rating: 4,
-    reviews: 32,
-    image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=400&auto=format&fit=crop'
-  },
-  {
-    id: 5,
-    title: 'Logitech MX Master 3S Wireless Mouse',
-    category: 'Accessories',
-    price: 10500,
-    oldPrice: 12000,
-    discount: 12,
-    rating: 5,
-    reviews: 210,
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?q=80&w=400&auto=format&fit=crop'
-  }
-];
+const flashSaleProducts = getFlashSaleProducts();
 
 const FlashSale = () => {
   // Countdown Timer Logic

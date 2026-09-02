@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const ProductCard = ({ product }) => {
   return (
@@ -29,21 +30,23 @@ const ProductCard = ({ product }) => {
       </div>
 
       {/* Product Image */}
-      <div className="relative w-full aspect-[4/5] bg-gray-50 overflow-hidden cursor-pointer">
+      <Link to={`/product/${product.id}`} className="relative w-full aspect-[4/5] bg-gray-50 overflow-hidden cursor-pointer block">
         <img 
           src={product.image} 
           alt={product.title} 
           className="w-full h-full object-cover mix-blend-multiply group-hover:scale-110 transition-transform duration-700 ease-out p-4"
         />
-      </div>
+      </Link>
 
       {/* Product Details */}
       <div className="p-4 flex flex-col flex-1">
         <span className="text-xs text-gray-400 font-medium mb-1 uppercase tracking-wider">{product.category}</span>
         
-        <h3 className="font-medium text-gray-900 text-sm mb-2 line-clamp-2 leading-snug cursor-pointer hover:text-primary transition-colors">
-          {product.title}
-        </h3>
+        <Link to={`/product/${product.id}`}>
+          <h3 className="font-medium text-gray-900 text-sm mb-2 line-clamp-2 leading-snug cursor-pointer hover:text-primary transition-colors">
+            {product.title}
+          </h3>
+        </Link>
         
         {/* Rating */}
         <div className="flex items-center gap-1 mb-3">

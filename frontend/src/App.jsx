@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import BecomeVendor from './pages/BecomeVendor';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ProductDetails from './pages/ProductDetails';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/seller" element={<BecomeVendor />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
         </Routes>
       </Router>
     </AuthProvider>
