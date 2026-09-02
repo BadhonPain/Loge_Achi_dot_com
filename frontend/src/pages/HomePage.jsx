@@ -11,7 +11,7 @@ import { Truck, ShieldCheck, HeadphonesIcon, CreditCard, ArrowRight } from 'luci
 
 const HomePage = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-[#fcfcfc] font-sans selection:bg-primary/30 selection:text-primary">
+    <div className="min-h-screen flex flex-col bg-[#fcfcfc] dark:bg-gray-950 font-sans selection:bg-primary/30 selection:text-primary">
       <Navbar />
 
       <main className="flex-1">
@@ -59,9 +59,9 @@ const HomePage = () => {
         </section>
 
         {/* Premium Trust Features Section */}
-        <section className="border-y border-gray-100 bg-white py-8">
+        <section className="border-y border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 py-8">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-gray-100">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-gray-100 dark:divide-gray-800">
 
               <div className="flex items-center gap-4 px-4 group">
                 <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white text-gray-700 transition-all duration-300">

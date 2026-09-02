@@ -1,14 +1,16 @@
 import React, { useContext, useState } from 'react';
-import { Search, ShoppingBag, User, Menu, Heart, LogOut } from 'lucide-react';
+import { Search, ShoppingBag, User, Menu, Heart, LogOut, Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
+  const { isDark, toggle } = useTheme();
   const [showDropdown, setShowDropdown] = useState(false);
 
   return (
-    <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-100">
+    <header className="bg-white/80 dark:bg-gray-900/90 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-100 dark:border-gray-800">
       {/* Top Utility Bar - Very subtle */}
       <div className="bg-gray-900 text-gray-300 text-xs py-2 hidden md:block">
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
@@ -55,10 +57,19 @@ const Navbar = () => {
 
         {/* Minimalist Actions */}
         <div className="flex items-center gap-5 shrink-0">
-          <Link to="/wishlist" className="p-2 text-gray-600 hover:text-primary transition-colors">
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggle}
+            className="p-2 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {isDark ? <Sun size={22} strokeWidth={1.5} /> : <Moon size={22} strokeWidth={1.5} />}
+          </button>
+
+          <Link to="/wishlist" className="p-2 text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
             <Heart size={22} strokeWidth={1.5} />
           </Link>
-          
+
           {/* User Auth Section */}
           <div className="relative">
             {user ? (
