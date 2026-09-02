@@ -3,6 +3,8 @@ import Navbar from '../components/layout/Navbar';
 import CategoryMenu from '../components/home/CategoryMenu';
 import HeroSlider from '../components/home/HeroSlider';
 import FlashSale from '../components/home/FlashSale';
+import TopCategories from '../components/home/TopCategories';
+import OfficialMall from '../components/home/OfficialMall';
 import { Truck, ShieldCheck, HeadphonesIcon, CreditCard, ArrowRight } from 'lucide-react';
 
 const HomePage = () => {
@@ -105,6 +107,12 @@ const HomePage = () => {
 
         {/* Level 3: Flash Sales Section */}
         <FlashSale />
+
+        {/* Level 4: Top Categories */}
+        <TopCategories />
+
+        {/* Level 4: Official Brands / Top Vendors */}
+        <OfficialMall />
 
       </main>
     </div>
