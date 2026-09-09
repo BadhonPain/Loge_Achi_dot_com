@@ -1,22 +1,9 @@
-const express = require("express");
-
+const express = require('express');
 const router = express.Router();
+const { getCustomerById, updateCustomer } = require('../controllers/customerController');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-const {
-    getAllCustomers,
-    getCustomerById,
-    createCustomer,
-    updateCustomer
-} = require("../controllers/customerController");
-
-
-router.get("/", getAllCustomers);
-
-router.get("/:id", getCustomerById);
-
-router.post("/", createCustomer);
-
-router.put("/:id", updateCustomer);
-
+router.get('/:id', protect, getCustomerById);
+router.put('/:id', protect, authorize('CUSTOMER', 'ADMIN'), updateCustomer);
 
 module.exports = router;

@@ -8,6 +8,8 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ProductDetails from './pages/ProductDetails';
 import CategoryPage from './pages/CategoryPage';
+import AdminDashboard from './pages/AdminDashboard';
+import SellerDashboard from './pages/SellerDashboard';
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/category/:slug" element={<CategoryPage />} />
             <Route path="/categories" element={<CategoryPage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/seller-dashboard" element={<SellerDashboard />} />
           </Routes>
         </Router>
       </AuthProvider>
