@@ -10,6 +10,10 @@ import ProductDetails from './pages/ProductDetails';
 import CategoryPage from './pages/CategoryPage';
 import AdminDashboard from './pages/AdminDashboard';
 import SellerDashboard from './pages/SellerDashboard';
+import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrdersPage from './pages/OrdersPage';
+import WishlistPage from './pages/WishlistPage';
 
 function App() {
   return (
@@ -26,6 +30,10 @@ function App() {
             <Route path="/categories" element={<CategoryPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/seller-dashboard" element={<SellerDashboard />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
           </Routes>
         </Router>
       </AuthProvider>

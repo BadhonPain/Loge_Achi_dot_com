@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import {
@@ -79,6 +80,9 @@ const BecomeVendor = () => {
   const [currentStep, setCurrentStep] = useState(0); // 0 = landing, 1-4 = form steps, 5 = success
   const [form, setForm] = useState(INITIAL);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const { registerSeller } = useContext(AuthContext);
 
   const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
   const setFile = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.files[0] }));
@@ -114,9 +118,31 @@ const BecomeVendor = () => {
   };
   const back = () => { setCurrentStep(s => s - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateStep(4)) setCurrentStep(5);
+    if (!validateStep(4)) return;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await registerSeller(
+        form.fullName,
+        form.storeName || form.businessName,
+        form.email,
+        form.password,
+        form.phone,
+        `${form.address}, ${form.city}`
+      );
+      if (res && res.success) {
+        setCurrentStep(5);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setSubmitError(res?.message || 'Failed to submit application. Please check details.');
+      }
+    } catch (err) {
+      setSubmitError(err.response?.data?.message || 'Failed to register seller');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const err = (field) => errors[field] ? (
@@ -429,13 +455,26 @@ const BecomeVendor = () => {
                     </button>
                   )}
 
+                  {submitError && (
+                    <div className="w-full bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 p-3 rounded-xl mb-4 text-sm font-medium flex items-center gap-2">
+                      <AlertCircle size={16} /> {submitError}
+                    </div>
+                  )}
+
                   {currentStep < 4 ? (
                     <button onClick={next} className="bg-primary hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition-all hover:scale-105">
                       Continue →
                     </button>
                   ) : (
-                    <button onClick={handleSubmit} className="bg-primary hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition-all hover:scale-105">
-                      Submit Application
+                    <button onClick={handleSubmit} disabled={submitting} className="bg-primary hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition-all hover:scale-105 disabled:opacity-50 flex items-center gap-2">
+                      {submitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Submitting...
+                        </>
+                      ) : (
+                        'Submit Application'
+                      )}
                     </button>
                   )}
                 </div>
@@ -458,17 +497,15 @@ const BecomeVendor = () => {
                 Congratulations, <strong className="text-gray-900 dark:text-white">{form.fullName || 'Seller'}</strong>!
               </p>
               <p className="text-gray-500 dark:text-gray-400 mb-8">
-                Your seller account for <strong className="text-primary">{form.storeName || 'your store'}</strong> is under review.
-                We will email you at <strong className="text-gray-700 dark:text-gray-300">{form.email}</strong> within 24 hours with the result.
+                Your seller account for <strong className="text-primary">{form.storeName || 'your store'}</strong> has been created and is active.
               </p>
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-left mb-8 space-y-3">
                 <h3 className="font-bold text-gray-900 dark:text-white mb-4">What happens next?</h3>
                 {[
                   { icon: Mail,     text: 'You will receive a confirmation email shortly.' },
-                  { icon: FileText, text: 'Our team reviews your documents within 24 hours.' },
-                  { icon: Store,    text: 'Once approved, your seller dashboard becomes active.' },
-                  { icon: Package,  text: 'Start listing products and receiving orders!' },
+                  { icon: Store,    text: 'Your seller account has been registered with active status.' },
+                  { icon: Package,  text: 'You can now list products, manage inventory and track orders.' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                     <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
@@ -479,9 +516,14 @@ const BecomeVendor = () => {
                 ))}
               </div>
 
-              <Link to="/" className="bg-primary hover:bg-orange-600 text-white font-bold px-10 py-3 rounded-full transition-all hover:scale-105 inline-block">
-                Back to Home
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/seller-dashboard" className="bg-primary hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-full transition-all hover:scale-105 inline-block text-center shadow-lg shadow-primary/20">
+                  Go to Seller Dashboard →
+                </Link>
+                <Link to="/" className="border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium px-8 py-3 rounded-full transition-all hover:border-primary hover:text-primary inline-block text-center">
+                  Back to Home
+                </Link>
+              </div>
             </div>
           </section>
         )}
