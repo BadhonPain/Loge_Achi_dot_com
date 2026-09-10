@@ -1,7 +1,3 @@
--- =============================================
--- 60% Evaluation — Database Updates
--- Run these in MySQL Workbench on loge_achi_db
--- =============================================
 
 USE loge_achi_db;
 
