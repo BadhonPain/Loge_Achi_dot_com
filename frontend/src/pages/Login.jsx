@@ -1,28 +1,28 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Store, Shield, Sparkles, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Store, Shield, ArrowRight } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
-const DEMO_CREDENTIALS = {
+const ROLE_INFO = {
   customer: {
-    email: 'customer@loge.com',
-    password: 'customer123',
-    roleLabel: 'Customer',
-    desc: 'Shop products, manage your cart, checkout and track orders',
+    title: 'Customer Sign In',
+    subtitle: 'Access your shopping cart, order history, and account settings.',
+    buttonText: 'Sign In to Account',
+    emailPlaceholder: 'e.g. customer@example.com',
   },
   seller: {
-    email: 'seller@apex.com',
-    password: 'seller123',
-    roleLabel: 'Seller / Vendor',
-    desc: 'Manage your shop inventory, add products and update order status',
+    title: 'Seller Central Sign In',
+    subtitle: 'Manage your storefront inventory, track shipments, and process orders.',
+    buttonText: 'Sign In to Seller Central',
+    emailPlaceholder: 'e.g. seller@store.com',
   },
   admin: {
-    email: 'admin@loge.com',
-    password: 'admin123',
-    roleLabel: 'Platform Administrator',
-    desc: 'Full platform oversight: user governance, seller approval and metrics',
+    title: 'Administrative Console',
+    subtitle: 'Restricted administrative access for system governance, user and merchant management.',
+    buttonText: 'Sign In to Admin Console',
+    emailPlaceholder: 'e.g. admin@domain.com',
   },
 };
 
@@ -31,49 +31,43 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Selected role tab: 'customer' | 'seller' | 'admin'
+  // Selected portal tab: 'customer' | 'seller' | 'admin'
   const initialRole = searchParams.get('role')?.toLowerCase();
-  const [selectedRole, setSelectedRole] = useState(
+  const [activePortal, setActivePortal] = useState(
     initialRole === 'seller' || initialRole === 'admin' ? initialRole : 'customer'
   );
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Sync with searchParams if navigated with ?role=...
+  // Sync with URL query param if user arrived via navbar direct link
   useEffect(() => {
     const roleParam = searchParams.get('role')?.toLowerCase();
     if (roleParam === 'seller' || roleParam === 'admin' || roleParam === 'customer') {
-      setSelectedRole(roleParam);
-    }
-  }, [searchParams]);
-
-  // Quick-fill demo credentials
-  const fillDemo = (roleKey) => {
-    const cred = DEMO_CREDENTIALS[roleKey];
-    if (cred) {
-      setEmail(cred.email);
-      setPassword(cred.password);
+      setActivePortal(roleParam);
       setError('');
     }
-  };
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!email || !password) {
-      setError('Please enter both email and password');
+
+    if (!email.trim() || !password) {
+      setError('Please enter your email address and password.');
       return;
     }
+
     setLoading(true);
-    const result = await login(email, password);
+    const result = await login(email.trim(), password);
     setLoading(false);
 
     if (result.success) {
-      // Automatic role-based routing resolved from server DB
+      // Dynamic role redirection resolved securely by the database
       if (result.role === 'ADMIN') {
         navigate('/admin');
       } else if (result.role === 'SELLER') {
@@ -82,102 +76,78 @@ const Login = () => {
         navigate('/');
       }
     } else {
-      setError(result.message || 'Invalid email or password');
+      setError(result.message || 'Incorrect email or password. Please try again.');
     }
   };
 
-  const currentDemo = DEMO_CREDENTIALS[selectedRole];
+  const portal = ROLE_INFO[activePortal] || ROLE_INFO.customer;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 font-sans">
       <Navbar />
 
       <main className="flex-1 flex items-center justify-center p-4 py-12">
-        <div className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 transition-all">
+        <div className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-800 transition-all">
 
-          {/* Header */}
-          <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 p-8 text-center text-white relative overflow-hidden">
-            <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary/20 rounded-full blur-2xl pointer-events-none"></div>
-            <span className="text-primary text-xs font-black tracking-widest uppercase mb-1 block">LogeAchi Multi-Role Authentication</span>
-            <h2 className="text-3xl font-black tracking-tight mb-2">
-              {selectedRole === 'admin' ? 'Admin Control Center' : selectedRole === 'seller' ? 'Seller & Vendor Portal' : 'Customer Account Login'}
-            </h2>
-            <p className="text-gray-300 text-sm max-w-md mx-auto">
-              {currentDemo.desc}
+          {/* Portal Switcher Segmented Control */}
+          <div className="p-6 pb-0">
+            <div className="grid grid-cols-3 gap-1.5 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
+              <button
+                type="button"
+                onClick={() => { setActivePortal('customer'); setError(''); }}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                  activePortal === 'customer'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <User size={15} className={activePortal === 'customer' ? 'text-primary' : ''} />
+                <span>Customer</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActivePortal('seller'); setError(''); }}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                  activePortal === 'seller'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Store size={15} className={activePortal === 'seller' ? 'text-orange-500' : ''} />
+                <span>Seller Central</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActivePortal('admin'); setError(''); }}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                  activePortal === 'admin'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Shield size={15} className={activePortal === 'admin' ? 'text-red-500' : ''} />
+                <span>Admin</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Card Header */}
+          <div className="px-8 pt-6 pb-4">
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+              {portal.title}
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {portal.subtitle}
             </p>
           </div>
 
-          <div className="p-8">
-            {/* Role Selection Tabs */}
-            <div className="mb-6">
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
-                Select Your Role Portal
-              </label>
-              <div className="grid grid-cols-3 gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
-                <button
-                  type="button"
-                  onClick={() => { setSelectedRole('customer'); setError(''); }}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                    selectedRole === 'customer'
-                      ? 'bg-white dark:bg-gray-700 text-primary shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <User size={15} /> Customer
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setSelectedRole('seller'); setError(''); }}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                    selectedRole === 'seller'
-                      ? 'bg-white dark:bg-gray-700 text-primary shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Store size={15} /> Seller
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setSelectedRole('admin'); setError(''); }}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                    selectedRole === 'admin'
-                      ? 'bg-white dark:bg-gray-700 text-primary shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Shield size={15} /> Admin
-                </button>
-              </div>
-            </div>
-
-            {/* One-Click Quick Fill Demo Box */}
-            <div className="bg-orange-50/70 dark:bg-orange-950/30 border border-orange-200/70 dark:border-orange-900/40 rounded-2xl p-4 mb-6">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
-                  <Sparkles size={15} />
-                  <span>One-Click Demo Account for {currentDemo.roleLabel}</span>
-                </div>
-                <span className="text-[10px] font-semibold text-gray-500 bg-white/80 dark:bg-gray-800 px-2 py-0.5 rounded-full border border-orange-100 dark:border-orange-900/40">
-                  Ready to test
-                </span>
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                Email: <code className="font-mono font-bold text-gray-900 dark:text-white">{currentDemo.email}</code> | Pass: <code className="font-mono font-bold text-gray-900 dark:text-white">{currentDemo.password}</code>
-              </p>
-              <button
-                type="button"
-                onClick={() => fillDemo(selectedRole)}
-                className="w-full bg-white dark:bg-gray-800 hover:bg-primary hover:text-white dark:hover:bg-primary text-primary font-bold text-xs py-2 px-3 rounded-xl border border-primary/20 dark:border-primary/40 transition-all flex items-center justify-center gap-2 shadow-sm"
-              >
-                <Sparkles size={14} /> Auto-fill {currentDemo.roleLabel} Credentials
-              </button>
-            </div>
-
+          {/* Form Section */}
+          <div className="px-8 pb-8">
             {error && (
-              <div className="bg-red-50 dark:bg-red-950 text-red-500 dark:text-red-400 p-3.5 rounded-xl flex items-center gap-2 mb-6 text-sm font-medium border border-red-100 dark:border-red-900">
-                <AlertCircle size={18} className="shrink-0" />
+              <div className="bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 p-3.5 rounded-2xl flex items-start gap-3 mb-5 text-sm font-medium border border-red-200 dark:border-red-900/50 animate-fadeIn">
+                <AlertCircle size={18} className="shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
@@ -193,10 +163,11 @@ const Login = () => {
                   </div>
                   <input
                     type="email"
+                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={currentDemo.email}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-sm font-medium"
+                    placeholder={portal.emailPlaceholder}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-sm font-medium placeholder:text-gray-400"
                   />
                 </div>
               </div>
@@ -206,6 +177,9 @@ const Login = () => {
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Password
                   </label>
+                  <a href="#forgot" onClick={(e) => e.preventDefault()} className="text-xs text-primary hover:underline font-semibold">
+                    Forgot password?
+                  </a>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -213,51 +187,112 @@ const Login = () => {
                   </div>
                   <input
                     type={showPw ? 'text' : 'password'}
+                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-12 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-sm font-medium"
+                    placeholder="Enter your password"
+                    className="w-full pl-10 pr-12 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-sm font-medium placeholder:text-gray-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                   >
                     {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary/20 accent-primary"
+                  />
+                  <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Keep me signed in</span>
+                </label>
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-primary/25 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex justify-center items-center gap-2 mt-2"
+                className="w-full bg-primary hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-primary/25 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex justify-center items-center gap-2 mt-2 cursor-pointer"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    <span>Sign In as {currentDemo.roleLabel}</span>
+                    <span>{portal.buttonText}</span>
                     <ArrowRight size={18} />
                   </>
                 )}
               </button>
             </form>
 
-            {/* Footer Links */}
-            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-2 text-center text-sm text-gray-500 dark:text-gray-400">
-              <div>
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-primary font-bold hover:underline">
-                  Sign up now
-                </Link>
-              </div>
-              <div>
-                Want to sell on LogeAchi?{' '}
-                <Link to="/seller" className="text-primary font-bold hover:underline">
-                  Apply as a Vendor
-                </Link>
-              </div>
+            {/* Context-sensitive Footer Links */}
+            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
+              {activePortal === 'customer' && (
+                <div className="space-y-2">
+                  <p>
+                    Don't have a customer account?{' '}
+                    <Link to="/signup" className="text-primary font-bold hover:underline">
+                      Sign up now
+                    </Link>
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Are you a seller?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setActivePortal('seller')}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Sign in to Seller Central
+                    </button>
+                  </p>
+                </div>
+              )}
+
+              {activePortal === 'seller' && (
+                <div className="space-y-2">
+                  <p>
+                    Want to start selling on LogeAchi?{' '}
+                    <Link to="/seller" className="text-primary font-bold hover:underline">
+                      Register as a Vendor
+                    </Link>
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Are you a customer?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setActivePortal('customer')}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Sign in as Customer
+                    </button>
+                  </p>
+                </div>
+              )}
+
+              {activePortal === 'admin' && (
+                <div className="space-y-2 text-xs text-gray-400">
+                  <p className="flex items-center justify-center gap-1.5 text-gray-500 dark:text-gray-400">
+                    <Shield size={14} className="text-red-500" />
+                    <span>Authorized personnel only. All access attempts are recorded.</span>
+                  </p>
+                  <p>
+                    Return to{' '}
+                    <button
+                      type="button"
+                      onClick={() => setActivePortal('customer')}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Standard Customer Sign In
+                    </button>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
