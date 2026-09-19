@@ -7,11 +7,11 @@ exports.getDashboardStats = async (req, res) => {
     const [[{ totalSellers }]] = await db.execute('SELECT COUNT(*) AS totalSellers FROM sellers');
     const [[{ totalProducts }]] = await db.execute('SELECT COUNT(*) AS totalProducts FROM products WHERE status != ?', ['ARCHIVED']);
     const [[{ totalOrders }]] = await db.execute('SELECT COUNT(*) AS totalOrders FROM orders');
-    const [[{ totalRevenue }]] = await db.execute('SELECT COALESCE(SUM(total_amount), 0) AS totalRevenue FROM orders WHERE order_status != ?', ['CANCELLED']);
+    const [[{ totalRevenue }]] = await db.execute('SELECT COALESCE(SUM(grand_total), 0) AS totalRevenue FROM orders WHERE order_status != ?', ['CANCELLED']);
 
     res.json({ success: true, data: { totalCustomers, totalSellers, totalProducts, totalOrders, totalRevenue } });
   } catch (error) {
-    console.error(error);
+    console.error('Admin Dashboard Stats Error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -72,7 +72,7 @@ exports.updateCustomerStatus = async (req, res) => {
 exports.getAllOrders = async (req, res) => {
   try {
     const [orders] = await db.query(`
-      SELECT o.order_id, o.customer_id, c.name AS customer_name, o.total_amount, o.order_status, o.created_at
+      SELECT o.order_id, o.customer_id, c.name AS customer_name, o.grand_total AS total_amount, o.grand_total, o.order_status, o.created_at
       FROM orders o JOIN customers c ON o.customer_id = c.customer_id
       ORDER BY o.created_at DESC
     `);

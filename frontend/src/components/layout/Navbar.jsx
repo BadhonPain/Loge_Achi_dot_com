@@ -1,35 +1,17 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import { Search, ShoppingBag, User, Menu, Heart, LogOut, Moon, Sun, Shield, Package, LayoutDashboard, X, Store, Sparkles, ChevronDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { CartContext } from '../../context/CartContext';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
   const { isDark, toggle } = useTheme();
+  const { cartCount, cartTotal } = useContext(CartContext);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobile, setShowMobile] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const [cartTotal, setCartTotal] = useState(0);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user && user.role === 'CUSTOMER') {
-      axios.get(`http://localhost:5000/api/cart/${user.id}`)
-        .then(res => {
-          setCartCount(res.data.count || res.data.data?.length || 0);
-          setCartTotal(res.data.cart_total || 0);
-        })
-        .catch(() => {
-          setCartCount(0);
-          setCartTotal(0);
-        });
-    } else {
-      setCartCount(0);
-      setCartTotal(0);
-    }
-  }, [user]);
 
   const handleLogout = async () => {
     await logout();

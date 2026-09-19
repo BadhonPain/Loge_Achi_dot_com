@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { CartContext } from '../context/CartContext';
 import { Star, Heart, ShoppingCart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ChevronRight, Store, Package, MessageCircle, CheckCircle, AlertCircle } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -21,28 +22,27 @@ const ProductDetails = () => {
   const [cartError, setCartError] = useState('');
   const [isWishlisted, setIsWishlisted] = useState(false);
   const { user } = useContext(AuthContext);
+  const { addToCart } = useContext(CartContext);
 
   const handleAddToCart = async () => {
     if (!user) {
-      navigate('/login');
+      navigate('/login?role=customer');
       return;
     }
     setAddingToCart(true);
     setCartError('');
     setCartSuccess(false);
-    try {
-      const numericId = parseInt(product.product_id || id.replace(/\D/g, '') || '1', 10) || 1;
-      await axios.post(`http://localhost:5000/api/cart/${user.id}/items`, {
-        product_id: numericId,
-        quantity: quantity
-      });
+
+    const targetProductId = Number(product.id || product.product_id || id) || 1;
+    const result = await addToCart(targetProductId, quantity);
+
+    setAddingToCart(false);
+    if (result.success) {
       setCartSuccess(true);
       setTimeout(() => setCartSuccess(false), 5000);
-    } catch (err) {
-      setCartError(err.response?.data?.message || 'Could not add to cart. Try logging in again.');
+    } else {
+      setCartError(result.message || 'Failed to add item to cart');
       setTimeout(() => setCartError(''), 5000);
-    } finally {
-      setAddingToCart(false);
     }
   };
 

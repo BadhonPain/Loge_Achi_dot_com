@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { CartProvider } from './context/CartContext';
 import HomePage from './pages/HomePage';
 import BecomeVendor from './pages/BecomeVendor';
 import Login from './pages/Login';
@@ -19,23 +20,25 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/seller" element={<BecomeVendor />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/product/:id" element={<ProductDetails />} />
-            <Route path="/category/:slug" element={<CategoryPage />} />
-            <Route path="/categories" element={<CategoryPage />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/seller-dashboard" element={<SellerDashboard />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/wishlist" element={<WishlistPage />} />
-          </Routes>
-        </Router>
+        <CartProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/seller" element={<BecomeVendor />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/product/:id" element={<ProductDetails />} />
+              <Route path="/category/:slug" element={<CategoryPage />} />
+              <Route path="/categories" element={<CategoryPage />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/seller-dashboard" element={<SellerDashboard />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/wishlist" element={<WishlistPage />} />
+            </Routes>
+          </Router>
+        </CartProvider>
       </AuthProvider>
     </ThemeProvider>
   );
