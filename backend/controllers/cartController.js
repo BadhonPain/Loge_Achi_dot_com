@@ -14,14 +14,13 @@ const getCart = async (req, res) => {
             WHERE customer_id = ?
         `, [customerId]);
 
+        let cartId;
         if (carts.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Cart not found"
-            });
+            const [newCart] = await db.query('INSERT INTO carts (customer_id) VALUES (?)', [customerId]);
+            cartId = newCart.insertId;
+        } else {
+            cartId = carts[0].cart_id;
         }
-
-        const cartId = carts[0].cart_id;
 
         const [items] = await db.query(`
             SELECT
@@ -111,14 +110,13 @@ const addToCart = async (req, res) => {
             WHERE customer_id = ?
         `, [customerId]);
 
+        let cartId;
         if (carts.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Cart not found"
-            });
+            const [newCart] = await db.query('INSERT INTO carts (customer_id) VALUES (?)', [customerId]);
+            cartId = newCart.insertId;
+        } else {
+            cartId = carts[0].cart_id;
         }
-
-        const cartId = carts[0].cart_id;
 
         // Check product
         const [products] = await db.query(`
