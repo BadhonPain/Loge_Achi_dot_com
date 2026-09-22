@@ -8,7 +8,8 @@ const express = require("express");
 const cors = require("cors");
 const cartRoutes = require("./routes/cartRoutes");
 const db = require("./config/db");
-
+const imageRoutes = require("./routes/imageRoutes");
+const offerRoutes = require("./routes/offerRoutes");
 const app = express();
 
 const PORT = process.env.PORT || 5000;
@@ -21,9 +22,10 @@ app.use("/api/products", productRoutes);
 app.use("/api/sellers", sellerRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/customers", customerRoutes);
-
+app.use("/api/products", imageRoutes);
 app.use("/api/customers", addressRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/offers", offerRoutes);
 // Basic route
 app.get("/", (req, res) => {
     res.json({
