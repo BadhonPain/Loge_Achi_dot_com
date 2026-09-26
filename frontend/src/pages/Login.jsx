@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Store, Shield, ArrowRight } from 'lucide-react';
+import { toast } from 'react-toastify';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
@@ -58,7 +59,9 @@ const Login = () => {
     setError('');
 
     if (!email.trim() || !password) {
-      setError('Please enter your email address and password.');
+      const msg = 'Please enter your email address and password.';
+      setError(msg);
+      toast.warn(msg);
       return;
     }
 
@@ -67,6 +70,7 @@ const Login = () => {
     setLoading(false);
 
     if (result.success) {
+      toast.success(`Welcome back! Signed in as ${result.role}. 👋`);
       // Dynamic role redirection resolved securely by the database
       if (result.role === 'ADMIN') {
         navigate('/admin');
@@ -76,7 +80,9 @@ const Login = () => {
         navigate('/');
       }
     } else {
-      setError(result.message || 'Incorrect email or password. Please try again.');
+      const msg = result.message || 'Incorrect email or password. Please try again.';
+      setError(msg);
+      toast.error(msg);
     }
   };
 
@@ -167,7 +173,7 @@ const Login = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={portal.emailPlaceholder}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-sm font-medium placeholder:text-gray-400"
+                    className="input input-bordered w-full pl-10 pr-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-medium"
                   />
                 </div>
               </div>
@@ -177,7 +183,7 @@ const Login = () => {
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Password
                   </label>
-                  <a href="#forgot" onClick={(e) => e.preventDefault()} className="text-xs text-primary hover:underline font-semibold">
+                  <a href="#forgot" onClick={(e) => { e.preventDefault(); toast.info('Password reset instructions sent if email exists'); }} className="text-xs text-primary hover:underline font-semibold">
                     Forgot password?
                   </a>
                 </div>
@@ -191,7 +197,7 @@ const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full pl-10 pr-12 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-sm font-medium placeholder:text-gray-400"
+                    className="input input-bordered w-full pl-10 pr-12 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-medium"
                   />
                   <button
                     type="button"
@@ -209,7 +215,7 @@ const Login = () => {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary/20 accent-primary"
+                    className="checkbox checkbox-primary checkbox-xs rounded"
                   />
                   <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Keep me signed in</span>
                 </label>
@@ -218,10 +224,13 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-primary/25 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex justify-center items-center gap-2 mt-2 cursor-pointer"
+                className="w-full text-white font-bold h-12 rounded-xl bg-primary hover:bg-orange-600 active:scale-[0.99] shadow-lg shadow-orange-500/25 disabled:opacity-50 inline-flex justify-center items-center gap-2 mt-2 transition-all cursor-pointer"
               >
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <>
+                    <span className="loading loading-spinner loading-sm text-white"></span>
+                    <span>Signing in...</span>
+                  </>
                 ) : (
                   <>
                     <span>{portal.buttonText}</span>

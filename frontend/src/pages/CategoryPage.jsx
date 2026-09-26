@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronRight, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import ProductCard from '../components/common/ProductCard';
-import allProducts from '../data/products';
+import allMockProducts from '../data/products';
+import axios from 'axios';
+
+const API = 'http://localhost:5000/api';
 
 // Map slugs to display names
 const categoryMeta = {
@@ -23,16 +26,43 @@ const sortOptions = ['Recommended', 'Price: Low to High', 'Price: High to Low', 
 
 const CategoryPage = () => {
   const { slug } = useParams();
-  const meta = categoryMeta[slug] || { name: slug, desc: 'Browse products in this category' };
+  const meta = categoryMeta[slug] || { name: slug ? slug.replace('-', ' ') : 'All Products', desc: 'Browse products in this category' };
 
+  const [rawProducts, setRawProducts] = useState([]);
   const [sortBy, setSortBy] = useState('Recommended');
   const [showFilters, setShowFilters] = useState(false);
 
-  // For demo: show all products (in real app, filter by category from API)
-  let products = [...allProducts];
-  if (sortBy === 'Price: Low to High') products.sort((a, b) => a.price - b.price);
-  if (sortBy === 'Price: High to Low') products.sort((a, b) => b.price - a.price);
-  if (sortBy === 'Top Rated') products.sort((a, b) => b.rating - a.rating);
+  useEffect(() => {
+    loadProducts();
+  }, [slug]);
+
+  const loadProducts = async () => {
+    try {
+      const res = await axios.get(`${API}/products`);
+      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setRawProducts(res.data.data);
+      } else {
+        setRawProducts(allMockProducts);
+      }
+    } catch (e) {
+      setRawProducts(allMockProducts);
+    }
+  };
+
+  let products = [...rawProducts];
+  if (slug && slug !== 'all') {
+    const slugLower = slug.toLowerCase().replace('-', ' ');
+    const filtered = products.filter(p => {
+      const catName = (p.category_name || p.category || '').toLowerCase();
+      const title = (p.product_name || p.title || '').toLowerCase();
+      return catName.includes(slugLower) || title.includes(slugLower);
+    });
+    if (filtered.length > 0) products = filtered;
+  }
+
+  if (sortBy === 'Price: Low to High') products.sort((a, b) => Number(a.price) - Number(b.price));
+  if (sortBy === 'Price: High to Low') products.sort((a, b) => Number(b.price) - Number(a.price));
+  if (sortBy === 'Top Rated') products.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fcfcfc] dark:bg-gray-950 font-sans">

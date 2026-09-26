@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { CartProvider } from './context/CartContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import HomePage from './pages/HomePage';
 import BecomeVendor from './pages/BecomeVendor';
 import Login from './pages/Login';
@@ -22,6 +24,18 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <Router>
+            <ToastContainer
+              position="top-right"
+              autoClose={2500}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="colored"
+            />
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/seller" element={<BecomeVendor />} />

@@ -214,23 +214,30 @@ const updateAddress = async (req, res) => {
 
 
 // DELETE ADDRESS
+// Uses explicit transaction control
 const deleteAddress = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const customerId = req.params.customerId;
         const addressId = req.params.addressId;
 
-        const [result] = await db.query(`
+        await connection.beginTransaction();
+
+        const [result] = await connection.query(`
             DELETE FROM customer_addresses
             WHERE address_id = ?
               AND customer_id = ?
         `, [addressId, customerId]);
 
         if (result.affectedRows === 0) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: "Address not found"
             });
         }
+
+        await connection.commit();
 
         res.status(200).json({
             success: true,
@@ -238,12 +245,15 @@ const deleteAddress = async (req, res) => {
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error(error);
 
         res.status(500).json({
             success: false,
             message: "Failed to delete address"
         });
+    } finally {
+        connection.release();
     }
 };
 

@@ -443,4 +443,5 @@ export const getJustForYouProducts = () => {
   return allProducts.filter(p => p.id >= 6 && p.id <= 15);
 };
 
+export const products = allProducts;
 export default allProducts;
