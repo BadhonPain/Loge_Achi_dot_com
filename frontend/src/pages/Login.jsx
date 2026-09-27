@@ -28,7 +28,7 @@ const ROLE_INFO = {
 };
 
 const Login = () => {
-  const { login } = useContext(AuthContext);
+  const { login, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -102,8 +102,8 @@ const Login = () => {
                 type="button"
                 onClick={() => { setActivePortal('customer'); setError(''); }}
                 className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${activePortal === 'customer'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
               >
                 <User size={15} className={activePortal === 'customer' ? 'text-primary' : ''} />
@@ -114,8 +114,8 @@ const Login = () => {
                 type="button"
                 onClick={() => { setActivePortal('seller'); setError(''); }}
                 className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${activePortal === 'seller'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
               >
                 <Store size={15} className={activePortal === 'seller' ? 'text-orange-500' : ''} />
@@ -126,8 +126,8 @@ const Login = () => {
                 type="button"
                 onClick={() => { setActivePortal('admin'); setError(''); }}
                 className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${activePortal === 'admin'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
               >
                 <Shield size={15} className={activePortal === 'admin' ? 'text-red-500' : ''} />
@@ -260,7 +260,7 @@ const Login = () => {
                 </div>
               )}
 
-              {activePortal === 'seller' && (
+              {activePortal === 'seller' && user?.role !== 'SELLER' && (
                 <div className="space-y-2">
                   <p>
                     Want to start selling on LogeAchi?{' '}

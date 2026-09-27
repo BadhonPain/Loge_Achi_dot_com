@@ -35,7 +35,7 @@ const ProductCard = ({ product }) => {
       return;
     }
     if (user.role !== 'CUSTOMER') {
-      toast.info('Sign in with a customer account to purchase items');
+      toast.info('Cart is available only to customer accounts.');
       return;
     }
     if (isOutOfStock) {
@@ -63,9 +63,13 @@ const ProductCard = ({ product }) => {
   const handleWishlist = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user || user.role !== 'CUSTOMER') {
+    if (!user) {
       toast.info('Sign in with a customer account to save products');
       navigate('/login?role=customer');
+      return;
+    }
+    if (user.role !== 'CUSTOMER') {
+      toast.info('Wishlist is available only to customer accounts.');
       return;
     }
     setUpdatingWishlist(true);

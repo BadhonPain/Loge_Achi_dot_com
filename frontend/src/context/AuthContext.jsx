@@ -46,17 +46,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const registerSeller = async (seller_name, shop_name, email, password, phone, address) => {
+  const submitVendorApplication = async (application) => {
     try {
-      const res = await axios.post(`${API}/auth/register-seller`, { seller_name, shop_name, email, password, phone, address });
-      const { token, user: userData } = res.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      return { success: true };
+      const response = await axios.post(`${API}/vendor-applications`, application);
+      return { success: true, ...response.data };
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Seller registration failed' };
+      return { success: false, message: error.response?.data?.message || 'Vendor application failed' };
     }
   };
 
@@ -71,7 +66,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, registerSeller, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, submitVendorApplication, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );
