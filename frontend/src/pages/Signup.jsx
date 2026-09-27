@@ -1,10 +1,11 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Eye, EyeOff, User, Store, Mail, Lock, Phone, MapPin, AlertCircle, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, User, Store, Mail, Lock, Phone, MapPin, AlertCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import { customerRegistrationSchema, sellerRegistrationSchema } from '../schemas/authSchemas';
 
 const Signup = () => {
   const { register, registerSeller } = useContext(AuthContext);
@@ -20,31 +21,21 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (form.password !== form.confirmPassword) {
-      const msg = 'Passwords do not match';
+    const schema = mode === 'customer' ? customerRegistrationSchema : sellerRegistrationSchema;
+    const validation = schema.safeParse(form);
+    if (!validation.success) {
+      const msg = validation.error.issues[0].message;
       setError(msg);
       toast.warn(msg);
       return;
     }
-    if (form.password.length < 6) {
-      const msg = 'Password must be at least 6 characters';
-      setError(msg);
-      toast.warn(msg);
-      return;
-    }
+    const values = validation.data;
     setLoading(true);
     let result;
     if (mode === 'customer') {
-      result = await register(form.name, form.email, form.password, form.phone);
+      result = await register(values.name, values.email, values.password, values.phone);
     } else {
-      if (!form.seller_name || !form.shop_name) {
-        const msg = 'Seller name and shop name are required';
-        setError(msg);
-        toast.warn(msg);
-        setLoading(false);
-        return;
-      }
-      result = await registerSeller(form.seller_name, form.shop_name, form.email, form.password, form.phone, form.address);
+      result = await registerSeller(values.seller_name, values.shop_name, values.email, values.password, values.phone, values.address);
     }
     setLoading(false);
     if (result.success) {
@@ -153,7 +144,7 @@ const Signup = () => {
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400"><Lock size={18} /></div>
-                    <input type={showPw ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="Min 6 chars" required className="input input-bordered w-full pl-10 pr-10 rounded-xl text-sm" />
+                    <input type={showPw ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="6+ letters and numbers" required className="input input-bordered w-full pl-10 pr-10 rounded-xl text-sm" />
                     <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                       {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>

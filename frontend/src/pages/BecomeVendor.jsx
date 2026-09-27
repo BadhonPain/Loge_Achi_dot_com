@@ -1,20 +1,21 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import { vendorAccountSchema, vendorBusinessSchema, vendorStoreSchema } from '../schemas/authSchemas';
 import {
   Store, TrendingUp, ShieldCheck, CheckCircle2, ChevronRight,
-  Package, CreditCard, Headphones, Upload, User, Building2,
-  Phone, Mail, MapPin, FileText, Camera, Check, AlertCircle
+  Package, Headphones, Upload, User, Building2,
+  Mail, FileText, Camera, Check, AlertCircle
 } from 'lucide-react';
 
 // ─── Step config ────────────────────────────────────────────
 const STEPS = [
-  { id: 1, label: 'Account Info',    icon: User },
-  { id: 2, label: 'Business Info',  icon: Building2 },
-  { id: 3, label: 'Verification',   icon: FileText },
-  { id: 4, label: 'Store Setup',    icon: Camera },
+  { id: 1, label: 'Account Info', icon: User },
+  { id: 2, label: 'Business Info', icon: Building2 },
+  { id: 3, label: 'Verification', icon: FileText },
+  { id: 4, label: 'Store Setup', icon: Camera },
 ];
 
 const INITIAL = {
@@ -88,24 +89,17 @@ const BecomeVendor = () => {
   const setFile = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.files[0] }));
 
   const validateStep = (step) => {
-    const errs = {};
-    if (step === 1) {
-      if (!form.fullName.trim()) errs.fullName = 'Required';
-      if (!form.email.trim()) errs.email = 'Required';
-      if (!form.phone.trim()) errs.phone = 'Required';
-      if (!form.password || form.password.length < 6) errs.password = 'Min 6 characters';
-      if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match';
-    }
-    if (step === 2) {
-      if (!form.businessName.trim()) errs.businessName = 'Required';
-      if (!form.businessType) errs.businessType = 'Required';
-      if (!form.category) errs.category = 'Required';
-      if (!form.address.trim()) errs.address = 'Required';
-    }
-    if (step === 4) {
-      if (!form.storeName.trim()) errs.storeName = 'Required';
-      if (!form.agreedToTerms) errs.agreedToTerms = 'You must agree to the Terms';
-    }
+    const schema = {
+      1: vendorAccountSchema,
+      2: vendorBusinessSchema,
+      4: vendorStoreSchema,
+    }[step];
+    if (!schema) return true;
+
+    const validation = schema.safeParse(form);
+    const errs = validation.success
+      ? {}
+      : Object.fromEntries(validation.error.issues.map((issue) => [issue.path[0], issue.message]));
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -225,10 +219,10 @@ const BecomeVendor = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
-                    { icon: TrendingUp,  title: 'Massive Audience',   desc: 'Reach 2M+ active shoppers browsing daily for products exactly like yours.', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950' },
-                    { icon: Store,       title: 'Easy Store Setup',   desc: 'Customise your storefront, manage inventory and track sales in one dashboard.', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
-                    { icon: ShieldCheck, title: 'Secure Payments',    desc: 'Guaranteed weekly payouts straight to your bank — full transparency.', color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-950' },
-                    { icon: Headphones,  title: 'Dedicated Support',  desc: '24/7 seller support via chat, phone and email to help you grow faster.', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950' },
+                    { icon: TrendingUp, title: 'Massive Audience', desc: 'Reach 2M+ active shoppers browsing daily for products exactly like yours.', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950' },
+                    { icon: Store, title: 'Easy Store Setup', desc: 'Customise your storefront, manage inventory and track sales in one dashboard.', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
+                    { icon: ShieldCheck, title: 'Secure Payments', desc: 'Guaranteed weekly payouts straight to your bank — full transparency.', color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-950' },
+                    { icon: Headphones, title: 'Dedicated Support', desc: '24/7 seller support via chat, phone and email to help you grow faster.', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950' },
                   ].map(({ icon: Icon, title, desc, color, bg }) => (
                     <div key={title} className="group bg-gray-50 dark:bg-gray-800 rounded-2xl p-7 border border-gray-100 dark:border-gray-700 hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                       <div className={`w-14 h-14 ${bg} rounded-xl flex items-center justify-center ${color} mb-5 group-hover:scale-110 transition-transform`}>
@@ -250,10 +244,10 @@ const BecomeVendor = () => {
                 </h2>
                 <div className="space-y-4">
                   {[
-                    { step: '01', icon: User,       title: 'Create Your Account',  desc: 'Fill out your personal details and verify your identity securely.' },
-                    { step: '02', icon: Building2,  title: 'Add Business Info',    desc: 'Tell us about your business type, category, and location.' },
-                    { step: '03', icon: FileText,   title: 'Submit Verification',  desc: 'Upload your NID and trade license. Approval typically takes 24 hours.' },
-                    { step: '04', icon: Package,    title: 'Launch Your Store',    desc: 'Set up your storefront, list products, and start receiving orders!' },
+                    { step: '01', icon: User, title: 'Create Your Account', desc: 'Fill out your personal details and verify your identity securely.' },
+                    { step: '02', icon: Building2, title: 'Add Business Info', desc: 'Tell us about your business type, category, and location.' },
+                    { step: '03', icon: FileText, title: 'Submit Verification', desc: 'Upload your NID and trade license. Approval typically takes 24 hours.' },
+                    { step: '04', icon: Package, title: 'Launch Your Store', desc: 'Set up your storefront, list products, and start receiving orders!' },
                   ].map(({ step, icon: Icon, title, desc }, idx) => (
                     <div key={idx} className="flex items-start gap-6 bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:border-primary/30 transition-colors group">
                       <div className="w-14 h-14 shrink-0 bg-gray-900 dark:bg-primary text-white rounded-2xl flex flex-col items-center justify-center group-hover:bg-primary transition-colors">
@@ -287,7 +281,7 @@ const BecomeVendor = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {[
                     { name: 'Karim Electronics', city: 'Dhaka', revenue: '৳4.5 Lakh/mo', quote: 'LogeAchi tripled my online sales in just 3 months. The dashboard is incredibly easy to use.' },
-                    { name: 'Fashionista BD',    city: 'Chittagong', revenue: '৳2.1 Lakh/mo', quote: 'The 0% commission offer gave me the confidence to go fully online. Never looked back!' },
+                    { name: 'Fashionista BD', city: 'Chittagong', revenue: '৳2.1 Lakh/mo', quote: 'The 0% commission offer gave me the confidence to go fully online. Never looked back!' },
                     { name: 'GreenMart Grocery', city: 'Sylhet', revenue: '৳1.8 Lakh/mo', quote: 'Delivery was always my pain point. LogeAchi\'s logistics partner solved it completely.' },
                   ].map(seller => (
                     <div key={seller.name} className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-7 border border-gray-100 dark:border-gray-700 text-left">
@@ -359,7 +353,7 @@ const BecomeVendor = () => {
                     {err('phone')}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <InputField label="Password" type="password" placeholder="Min 6 chars" value={form.password} onChange={set('password')} required />
+                        <InputField label="Password" type="password" placeholder="6+ letters and numbers" value={form.password} onChange={set('password')} required hint="Use at least 6 letters and numbers, with at least one of each." />
                         {err('password')}
                       </div>
                       <div>
@@ -503,9 +497,9 @@ const BecomeVendor = () => {
               <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-left mb-8 space-y-3">
                 <h3 className="font-bold text-gray-900 dark:text-white mb-4">What happens next?</h3>
                 {[
-                  { icon: Mail,     text: 'You will receive a confirmation email shortly.' },
-                  { icon: Store,    text: 'Your seller account has been registered with active status.' },
-                  { icon: Package,  text: 'You can now list products, manage inventory and track orders.' },
+                  { icon: Mail, text: 'You will receive a confirmation email shortly.' },
+                  { icon: Store, text: 'Your seller account has been registered with active status.' },
+                  { icon: Package, text: 'You can now list products, manage inventory and track orders.' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                     <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">

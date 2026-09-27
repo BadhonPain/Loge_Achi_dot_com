@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { customerRegistrationSchema, sellerRegistrationSchema, loginSchema } = require('../schemas/authSchemas');
 
 const generateToken = (id, email, role) => {
   return jwt.sign({ id, email, role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
@@ -8,8 +9,11 @@ const generateToken = (id, email, role) => {
 
 // Register Customer
 exports.registerCustomer = async (req, res) => {
-  const { name, email, password, phone } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ message: 'Name, email and password are required' });
+  const validation = customerRegistrationSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ message: validation.error.issues[0].message, errors: validation.error.issues });
+  }
+  const { name, email, password, phone } = validation.data;
 
   try {
     const [existing] = await db.execute(
@@ -49,8 +53,11 @@ exports.registerCustomer = async (req, res) => {
 
 // Register Seller
 exports.registerSeller = async (req, res) => {
-  const { seller_name, shop_name, email, password, phone, address } = req.body;
-  if (!seller_name || !shop_name || !email || !password) return res.status(400).json({ message: 'seller_name, shop_name, email and password are required' });
+  const validation = sellerRegistrationSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ message: validation.error.issues[0].message, errors: validation.error.issues });
+  }
+  const { seller_name, shop_name, email, password, phone, address } = validation.data;
 
   try {
     const [existing] = await db.execute(
@@ -78,13 +85,11 @@ exports.registerSeller = async (req, res) => {
 
 // Unified Login — checks admins -> sellers -> customers
 exports.login = async (req, res) => {
-  const { email, password, role: requestedRole } = req.body;
-  if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
-  const allowedRoles = ['ADMIN', 'SELLER', 'CUSTOMER'];
-  const normalizedRole = requestedRole?.toUpperCase();
-  if (requestedRole && !allowedRoles.includes(normalizedRole)) {
-    return res.status(400).json({ message: 'Invalid login role' });
+  const validation = loginSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ message: validation.error.issues[0].message, errors: validation.error.issues });
   }
+  const { email, password, role: normalizedRole } = validation.data;
 
   try {
     let user = null;
