@@ -66,7 +66,7 @@ const Login = () => {
     }
 
     setLoading(true);
-    const result = await login(email.trim(), password);
+    const result = await login(email.trim(), password, activePortal);
     setLoading(false);
 
     if (result.success) {
@@ -101,11 +101,10 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => { setActivePortal('customer'); setError(''); }}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                  activePortal === 'customer'
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${activePortal === 'customer'
                     ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 <User size={15} className={activePortal === 'customer' ? 'text-primary' : ''} />
                 <span>Customer</span>
@@ -114,11 +113,10 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => { setActivePortal('seller'); setError(''); }}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                  activePortal === 'seller'
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${activePortal === 'seller'
                     ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 <Store size={15} className={activePortal === 'seller' ? 'text-orange-500' : ''} />
                 <span>Seller Central</span>
@@ -127,11 +125,10 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => { setActivePortal('admin'); setError(''); }}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                  activePortal === 'admin'
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${activePortal === 'admin'
                     ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 <Shield size={15} className={activePortal === 'admin' ? 'text-red-500' : ''} />
                 <span>Admin</span>

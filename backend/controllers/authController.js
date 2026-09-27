@@ -78,8 +78,13 @@ exports.registerSeller = async (req, res) => {
 
 // Unified Login — checks admins -> sellers -> customers
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, role: requestedRole } = req.body;
   if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
+  const allowedRoles = ['ADMIN', 'SELLER', 'CUSTOMER'];
+  const normalizedRole = requestedRole?.toUpperCase();
+  if (requestedRole && !allowedRoles.includes(normalizedRole)) {
+    return res.status(400).json({ message: 'Invalid login role' });
+  }
 
   try {
     let user = null;
@@ -105,6 +110,10 @@ exports.login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+    if (normalizedRole && normalizedRole !== role) {
+      return res.status(403).json({ message: 'This account is not registered for the selected portal' });
+    }
 
     // Role is resolved from DB — never sent by the client
     const token = generateToken(user.id, user.email, role);
