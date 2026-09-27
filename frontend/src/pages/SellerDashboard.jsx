@@ -9,6 +9,9 @@ import { Package, ShoppingCart, Plus, Pencil, Trash2, DollarSign, Clock, Store, 
 
 const API = 'http://localhost:5000/api';
 
+const emptyImageUrls = ['', '', '', '', ''];
+const isValidImageUrl = (url) => /^https?:\/\/.+/i.test(url.trim());
+
 const SellerDashboard = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -18,14 +21,14 @@ const SellerDashboard = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [tab, setTab] = useState('products');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ 
-    category_id: '1', 
-    sku: '', 
-    product_name: '', 
-    description: '', 
-    price: '', 
-    stock_quantity: '', 
-    image_url: '' 
+  const [form, setForm] = useState({
+    category_id: '1',
+    sku: '',
+    product_name: '',
+    description: '',
+    price: '',
+    stock_quantity: '',
+    imageUrls: emptyImageUrls
   });
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -64,6 +67,18 @@ const SellerDashboard = () => {
     setForm(prev => ({ ...prev, sku: randomSku }));
   };
 
+  // Fills the first empty image slot instead of a single field — keeps the
+  // quick-preset convenience from the original design, adapted for 5 slots.
+  const applyImagePreset = (url) => {
+    setForm(prev => {
+      const next = [...prev.imageUrls];
+      const emptyIndex = next.findIndex(u => !u.trim());
+      if (emptyIndex === -1) return prev; // all 5 slots already filled
+      next[emptyIndex] = url;
+      return { ...prev, imageUrls: next };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -76,27 +91,35 @@ const SellerDashboard = () => {
         return;
       }
 
+      const { imageUrls, ...productFields } = form;
+
       if (editId) {
-        await axios.put(`${API}/products/${editId}`, { ...form, status: 'ACTIVE' });
+        await axios.put(`${API}/products/${editId}`, { ...productFields, status: 'ACTIVE' });
         toast.success('Product updated successfully! 📦');
       } else {
+        const validUrls = imageUrls.filter(u => u.trim() && isValidImageUrl(u));
+        if (validUrls.length < 4) {
+          toast.warn('Please provide at least 4 valid image URLs (http:// or https://)');
+          return;
+        }
         const payload = {
-          ...form,
-          sku: form.sku.trim() || `SKU-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`
+          ...productFields,
+          sku: form.sku.trim() || `SKU-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+          images: validUrls.map(u => ({ image_url: u.trim() }))
         };
         await axios.post(`${API}/products`, payload);
         toast.success('Product published to store & marketplace! 🚀');
       }
       setShowForm(false);
       setEditId(null);
-      setForm({ 
-        category_id: categories.length > 0 ? String(categories[0].category_id) : '1', 
-        sku: '', 
-        product_name: '', 
-        description: '', 
-        price: '', 
-        stock_quantity: '', 
-        image_url: '' 
+      setForm({
+        category_id: categories.length > 0 ? String(categories[0].category_id) : '1',
+        sku: '',
+        product_name: '',
+        description: '',
+        price: '',
+        stock_quantity: '',
+        imageUrls: emptyImageUrls
       });
       loadData();
     } catch (err) {
@@ -113,7 +136,7 @@ const SellerDashboard = () => {
       description: p.description || '',
       price: p.price,
       stock_quantity: p.stock_quantity ?? p.stock ?? '',
-      image_url: p.primary_image || p.image || ''
+      imageUrls: emptyImageUrls // editing existing images isn't supported yet — see note below
     });
     setEditId(p.product_id);
     setShowForm(true);
@@ -143,11 +166,11 @@ const SellerDashboard = () => {
 
   if (!user || user.role !== 'SELLER') return null;
 
-  const totalRevenue = dashboardStats 
-    ? Number(dashboardStats.total_revenue || 0) 
+  const totalRevenue = dashboardStats
+    ? Number(dashboardStats.total_revenue || 0)
     : orders.reduce((sum, o) => sum + Number(o.seller_total || 0), 0);
-  const pendingOrders = dashboardStats 
-    ? Number(dashboardStats.pending_orders || 0) 
+  const pendingOrders = dashboardStats
+    ? Number(dashboardStats.pending_orders || 0)
     : orders.filter(o => o.preparation_status === 'PENDING').length;
   const avgRating = dashboardStats ? Number(dashboardStats.avg_rating || 0).toFixed(1) : '5.0';
 
@@ -168,14 +191,14 @@ const SellerDashboard = () => {
             onClick={() => {
               setShowForm(!showForm);
               setEditId(null);
-              setForm({ 
-                category_id: categories.length > 0 ? String(categories[0].category_id) : '1', 
-                sku: `SKU-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`, 
-                product_name: '', 
-                description: '', 
-                price: '', 
+              setForm({
+                category_id: categories.length > 0 ? String(categories[0].category_id) : '1',
+                sku: `SKU-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`,
+                product_name: '',
+                description: '',
+                price: '',
                 stock_quantity: '25',
-                image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'
+                imageUrls: emptyImageUrls
               });
             }}
             className="btn btn-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 gap-2"
@@ -353,51 +376,74 @@ const SellerDashboard = () => {
                 />
               </div>
 
-              {/* Product Image URL with Presets and Preview */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">
-                  Product Image URL (Displayed in marketplace & store)
-                </label>
-                <div className="flex gap-3 items-center">
-                  <input
-                    value={form.image_url}
-                    onChange={e => setForm({ ...form, image_url: e.target.value })}
-                    placeholder="https://images.unsplash.com/... or paste image link"
-                    className="input input-bordered w-full rounded-xl text-xs"
-                  />
-                  {form.image_url ? (
-                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-200 shrink-0 bg-gray-100">
-                      <img 
-                        src={form.image_url} 
-                        alt="Preview" 
-                        className="w-full h-full object-cover"
-                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'; }}
-                      />
-                    </div>
-                  ) : null}
+              {/* Product Images (4–5 URLs) with previews and quick presets */}
+              {!editId && (
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">
+                    Product Images * <span className="normal-case font-normal text-gray-400">(4 required, 5th optional — Image 1 is the primary/cover image shown in the store & marketplace)</span>
+                  </label>
+                  <div className="flex flex-col gap-2.5">
+                    {form.imageUrls.map((url, index) => (
+                      <div key={index} className="flex gap-3 items-center">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-200 shrink-0 bg-gray-100 flex items-center justify-center">
+                          {url.trim() && isValidImageUrl(url) ? (
+                            <img
+                              src={url}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          ) : (
+                            <span className="text-[10px] text-gray-400 font-bold">#{index + 1}</span>
+                          )}
+                        </div>
+                        <input
+                          value={url}
+                          onChange={e => {
+                            const next = [...form.imageUrls];
+                            next[index] = e.target.value;
+                            setForm({ ...form, imageUrls: next });
+                          }}
+                          placeholder={index === 0 ? 'Image 1 URL (Primary) — https://...' : `Image ${index + 1} URL${index === 4 ? ' (optional)' : ''} — https://...`}
+                          required={index < 4}
+                          className="input input-bordered w-full rounded-xl text-xs"
+                        />
+                        {index === 0 && (
+                          <span className="badge badge-primary text-white text-[10px] font-bold shrink-0">PRIMARY</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Quick Presets — fills the first empty slot */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className="text-[11px] text-gray-400 font-semibold mr-1">Quick Presets:</span>
+                    {[
+                      { label: '🎧 Audio', url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600&auto=format&fit=crop' },
+                      { label: '⌚ Smartwatch', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop' },
+                      { label: '👟 Sneakers', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop' },
+                      { label: '💻 Laptop', url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=600&auto=format&fit=crop' },
+                      { label: '☕ Mug/Home', url: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=600&auto=format&fit=crop' },
+                      { label: '💄 Cosmetics', url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=600&auto=format&fit=crop' }
+                    ].map((preset, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => applyImagePreset(preset.url)}
+                        className="badge badge-outline hover:badge-primary text-[10px] cursor-pointer py-2 px-2"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                {/* Quick Presets */}
-                <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                  <span className="text-[11px] text-gray-400 font-semibold mr-1">Quick Presets:</span>
-                  {[
-                    { label: '🎧 Audio', url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600&auto=format&fit=crop' },
-                    { label: '⌚ Smartwatch', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop' },
-                    { label: '👟 Sneakers', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop' },
-                    { label: '💻 Laptop', url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=600&auto=format&fit=crop' },
-                    { label: '☕ Mug/Home', url: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=600&auto=format&fit=crop' },
-                    { label: '💄 Cosmetics', url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=600&auto=format&fit=crop' }
-                  ].map((preset, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setForm({ ...form, image_url: preset.url })}
-                      className="badge badge-outline hover:badge-primary text-[10px] cursor-pointer py-2 px-2"
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
+              )}
+
+              {editId && (
+                <div className="sm:col-span-2 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/40 rounded-xl px-3 py-2">
+                  <AlertCircle size={14} className="shrink-0" />
+                  Editing existing product images isn't supported yet — this update won't change the photos already on file.
                 </div>
-              </div>
+              )}
 
               <div className="sm:col-span-2 flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button type="submit" className="btn btn-primary text-white font-bold px-8 rounded-xl shadow-lg shadow-primary/25">
@@ -433,16 +479,16 @@ const SellerDashboard = () => {
                       <td>
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 shrink-0">
-                            <img 
-                              src={p.primary_image || p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'} 
-                              alt={p.product_name} 
+                            <img
+                              src={p.primary_image || p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'}
+                              alt={p.product_name}
                               className="w-full h-full object-cover"
                             />
                           </div>
                           <div>
-                            <a 
-                              href={`/product/${p.product_id}`} 
-                              target="_blank" 
+                            <a
+                              href={`/product/${p.product_id}`}
+                              target="_blank"
                               rel="noreferrer"
                               className="font-bold text-gray-900 dark:text-white hover:text-primary transition-colors max-w-xs block truncate"
                             >

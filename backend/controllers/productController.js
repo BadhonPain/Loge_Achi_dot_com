@@ -11,8 +11,8 @@ const getAllProducts = async (req, res) => {
                 p.description, p.price, p.stock_quantity, p.stock_quantity AS stock, 
                 p.status, p.created_at,
                 s.shop_name, s.seller_name, c.category_name, c.category_name AS category,
-                COALESCE(pi.image_url, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop') AS image,
-                COALESCE(pi.image_url, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop') AS primary_image,
+                COALESCE(pi.image_url, 'https://cdn-icons-png.flaticon.com/512/13434/13434972.png') AS image,
+                COALESCE(pi.image_url, 'https://cdn-icons-png.flaticon.com/512/13434/13434972.png') AS primary_image,
                 COALESCE(fn_product_avg_rating(p.product_id), 5.0) AS rating,
                 (
                     SELECT COUNT(*) 
@@ -141,13 +141,36 @@ const getProductById = async (req, res) => {
     }
 };
 
+// Shared helper: turn whatever the frontend sent (multi-image array, or the
+// legacy single image_url string) into a clean list of { image_url } objects.
+// Filters out anything that isn't a real http(s) URL and caps at 5 images.
+const normalizeImages = (images, legacyImageUrl) => {
+    const fromArray = Array.isArray(images)
+        ? images
+            .map(img => (img && typeof img.image_url === 'string' ? img.image_url.trim() : ''))
+            .filter(url => /^https?:\/\/.+/i.test(url))
+        : [];
+
+    if (fromArray.length > 0) return fromArray.slice(0, 5);
+
+    // Backward compatibility: older callers (or the legacy single-field form)
+    // may still send image_url instead of images[]
+    if (legacyImageUrl && typeof legacyImageUrl === 'string' && legacyImageUrl.trim()) {
+        return [legacyImageUrl.trim()];
+    }
+
+    return [];
+};
+
+const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop';
+
 // CREATE PRODUCT (Role: SELLER)
 // Uses explicit transaction control
 const createProduct = async (req, res) => {
     const connection = await db.getConnection();
     try {
         const seller_id = req.user.id; // Enforced Server-Side
-        let { category_id, sku, product_name, description, price, stock_quantity, image_url } = req.body;
+        let { category_id, sku, product_name, description, price, stock_quantity, image_url, images } = req.body;
 
         // Auto-generate SKU if omitted
         if (!sku || sku.trim() === '') {
@@ -173,6 +196,10 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: "Price must be a valid positive number" });
         }
 
+        // Accepts the multi-image `images` array from the current seller form,
+        // and still falls back to a legacy single `image_url` if that's what's sent
+        const cleanImages = normalizeImages(images, image_url);
+
         await connection.beginTransaction();
 
         // 1. Insert product
@@ -183,15 +210,23 @@ const createProduct = async (req, res) => {
 
         const newProductId = result.insertId;
 
-        // 2. Insert primary image into product_images
-        const finalImageUrl = (image_url && image_url.trim()) 
-            ? image_url.trim() 
-            : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop';
+        // 2. Insert every submitted image into product_images.
+        // First image (or the only one) becomes primary; falls back to the
+        // default placeholder if nothing valid was submitted at all.
+        const imagesToInsert = cleanImages.length > 0 ? cleanImages : [DEFAULT_PRODUCT_IMAGE];
+
+        const imageRows = imagesToInsert.map((url, index) => [
+            newProductId,
+            url,
+            index === 0 ? 1 : 0,
+            index + 1,
+            product_name.trim()
+        ]);
 
         await connection.query(`
             INSERT INTO product_images (product_id, image_url, is_primary, display_order, alt_text)
-            VALUES (?, ?, 1, 1, ?)
-        `, [newProductId, finalImageUrl, product_name.trim()]);
+            VALUES ?
+        `, [imageRows]);
 
         await connection.commit();
 
