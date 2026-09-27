@@ -1,6 +1,7 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { WishlistProvider } from './context/WishlistContext';
 import { AuthContext } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { CartProvider } from './context/CartContext';
@@ -44,37 +45,39 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <CartProvider>
-          <Router>
-            <ToastContainer
-              position="top-right"
-              autoClose={2500}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="colored"
-            />
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/seller" element={<BecomeVendor />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/product/:id" element={<ProductDetails />} />
-              <Route path="/category/:slug" element={<CategoryPage />} />
-              <Route path="/categories" element={<CategoryPage />} />
-              <Route path="/admin" element={<RequireAuth roles={['ADMIN']}><AdminDashboard /></RequireAuth>} />
-              <Route path="/seller-dashboard" element={<RequireAuth roles={['SELLER']}><SellerDashboard /></RequireAuth>} />
-              <Route path="/cart" element={<RequireAuth roles={['CUSTOMER']}><CartPage /></RequireAuth>} />
-              <Route path="/checkout" element={<RequireAuth roles={['CUSTOMER']}><CheckoutPage /></RequireAuth>} />
-              <Route path="/orders" element={<RequireAuth roles={['CUSTOMER']}><OrdersPage /></RequireAuth>} />
-              <Route path="/wishlist" element={<RequireAuth roles={['CUSTOMER']}><WishlistPage /></RequireAuth>} />
-            </Routes>
-          </Router>
-        </CartProvider>
+        <WishlistProvider>
+          <CartProvider>
+            <Router>
+              <ToastContainer
+                position="top-right"
+                autoClose={2500}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="colored"
+              />
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/seller" element={<BecomeVendor />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/product/:id" element={<ProductDetails />} />
+                <Route path="/category/:slug" element={<CategoryPage />} />
+                <Route path="/categories" element={<CategoryPage />} />
+                <Route path="/admin" element={<RequireAuth roles={['ADMIN']}><AdminDashboard /></RequireAuth>} />
+                <Route path="/seller-dashboard" element={<RequireAuth roles={['SELLER']}><SellerDashboard /></RequireAuth>} />
+                <Route path="/cart" element={<RequireAuth roles={['CUSTOMER']}><CartPage /></RequireAuth>} />
+                <Route path="/checkout" element={<RequireAuth roles={['CUSTOMER']}><CheckoutPage /></RequireAuth>} />
+                <Route path="/orders" element={<RequireAuth roles={['CUSTOMER']}><OrdersPage /></RequireAuth>} />
+                <Route path="/wishlist" element={<RequireAuth roles={['CUSTOMER']}><WishlistPage /></RequireAuth>} />
+              </Routes>
+            </Router>
+          </CartProvider>
+        </WishlistProvider>
       </AuthProvider>
     </ThemeProvider>
   );

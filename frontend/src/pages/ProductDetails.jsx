@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { WishlistContext } from '../context/WishlistStore';
 import { CartContext } from '../context/CartContext';
 import { Star, Heart, ShoppingCart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ChevronRight, Store, Package, MessageCircle, CheckCircle, AlertCircle, Share2 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -26,7 +27,6 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [addingToCart, setAddingToCart] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
 
   // Review submission state
   const [reviewRating, setReviewRating] = useState(5);
@@ -35,6 +35,9 @@ const ProductDetails = () => {
 
   const { user } = useContext(AuthContext);
   const { addToCart } = useContext(CartContext);
+  const { isInWishlist, toggleWishlist } = useContext(WishlistContext);
+  const [updatingWishlist, setUpdatingWishlist] = useState(false);
+  const isWishlisted = product ? isInWishlist(product.product_id || product.id) : false;
 
   useEffect(() => {
     loadProduct();
@@ -63,17 +66,17 @@ const ProductDetails = () => {
           reviews: p.reviews || 0,
           sold: p.sold || 35,
           description: p.description || 'Premium quality product verified by LogeAchi quality standards. Guaranteed authentic.',
-          images: Array.isArray(p.images) && p.images.length > 0 
-            ? p.images 
+          images: Array.isArray(p.images) && p.images.length > 0
+            ? p.images
             : [p.primary_image || p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'],
           features: Array.isArray(p.features) && p.features.length > 0
             ? p.features
             : [
-                '100% Genuine and authentic from official vendor',
-                'Comprehensive manufacturer warranty included',
-                'Fast doorstep delivery across Bangladesh',
-                '7-day hassle-free replacement guarantee'
-              ],
+              '100% Genuine and authentic from official vendor',
+              'Comprehensive manufacturer warranty included',
+              'Fast doorstep delivery across Bangladesh',
+              '7-day hassle-free replacement guarantee'
+            ],
           colors: Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : ['Standard Edition'],
           seller: p.seller || {
             id: p.seller_id,
@@ -148,13 +151,17 @@ const ProductDetails = () => {
     }
   };
 
-  const handleWishlistToggle = () => {
-    setIsWishlisted(!isWishlisted);
-    if (!isWishlisted) {
-      toast.success(`Saved "${product.title.substring(0, 20)}..." to wishlist! ❤️`);
-    } else {
-      toast.info('Removed from wishlist');
+  const handleWishlistToggle = async () => {
+    if (!user || user.role !== 'CUSTOMER') {
+      toast.info('Sign in with a customer account to save products');
+      navigate('/login?role=customer');
+      return;
     }
+    setUpdatingWishlist(true);
+    const result = await toggleWishlist(product.product_id || product.id);
+    setUpdatingWishlist(false);
+    if (!result.success) toast.error(result.message);
+    else toast.success(isWishlisted ? 'Removed from wishlist' : 'Saved to wishlist');
   };
 
   // Reset selections when navigating to a different product
@@ -239,9 +246,8 @@ const ProductDetails = () => {
                     <button
                       key={idx}
                       onClick={() => setSelectedImage(idx)}
-                      className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
-                        selectedImage === idx ? 'border-primary ring-2 ring-primary/20 shadow-md' : 'border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
+                      className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${selectedImage === idx ? 'border-primary ring-2 ring-primary/20 shadow-md' : 'border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
                     </button>
@@ -309,11 +315,10 @@ const ProductDetails = () => {
                       <button
                         key={idx}
                         onClick={() => setSelectedColor(idx)}
-                        className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                          selectedColor === idx 
-                            ? 'border-primary bg-primary/10 text-primary font-bold shadow-sm' 
-                            : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-400'
-                        }`}
+                        className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${selectedColor === idx
+                          ? 'border-primary bg-primary/10 text-primary font-bold shadow-sm'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-400'
+                          }`}
                       >
                         {color}
                       </button>
@@ -326,9 +331,9 @@ const ProductDetails = () => {
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quantity</p>
                   <div className="flex items-center gap-4">
                     <div className="inline-flex items-center border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-800 shadow-xs">
-                      <button 
+                      <button
                         type="button"
-                        onClick={() => handleQuantity('dec')} 
+                        onClick={() => handleQuantity('dec')}
                         className="inline-flex items-center justify-center w-10 h-10 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 transition-colors"
                         title="Decrease quantity"
                       >
@@ -337,9 +342,9 @@ const ProductDetails = () => {
                       <span className="inline-flex items-center justify-center w-12 h-10 text-sm font-bold text-gray-900 dark:text-white border-x border-gray-200 dark:border-gray-700 select-none">
                         {quantity}
                       </span>
-                      <button 
+                      <button
                         type="button"
-                        onClick={() => handleQuantity('inc')} 
+                        onClick={() => handleQuantity('inc')}
                         className="inline-flex items-center justify-center w-10 h-10 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 transition-colors"
                         title="Increase quantity"
                       >
@@ -352,7 +357,7 @@ const ProductDetails = () => {
 
                 {/* CTA Buttons */}
                 <div className="flex items-center gap-3 pt-2">
-                  <button 
+                  <button
                     type="button"
                     onClick={handleAddToCart}
                     disabled={addingToCart || product.stock === 0}
@@ -370,14 +375,14 @@ const ProductDetails = () => {
                       </>
                     )}
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={handleWishlistToggle}
-                    className={`inline-flex items-center justify-center h-12 w-12 rounded-xl border transition-all cursor-pointer shrink-0 ${
-                      isWishlisted 
-                        ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-500/20' 
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-rose-500 hover:border-rose-300 dark:hover:border-rose-500/50'
-                    }`}
+                    disabled={updatingWishlist}
+                    className={`inline-flex items-center justify-center h-12 w-12 rounded-xl border transition-all cursor-pointer shrink-0 ${isWishlisted
+                      ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-500/20'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-rose-500 hover:border-rose-300 dark:hover:border-rose-500/50'
+                      }`}
                     title={isWishlisted ? "In your Wishlist" : "Add to Wishlist"}
                   >
                     <Heart size={20} className={isWishlisted ? "fill-white" : ""} />
@@ -436,14 +441,14 @@ const ProductDetails = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <button 
-                      onClick={handleOpenVendorStore} 
+                    <button
+                      onClick={handleOpenVendorStore}
                       className="btn btn-outline btn-primary btn-sm w-full rounded-xl gap-2 font-bold"
                     >
                       <Store size={15} /> Visit Store ({product.seller.name})
                     </button>
-                    <button 
-                      onClick={() => toast.info(`Connecting to ${product.seller.name} customer service...`)} 
+                    <button
+                      onClick={() => toast.info(`Connecting to ${product.seller.name} customer service...`)}
                       className="btn btn-ghost btn-sm w-full rounded-xl gap-2 text-gray-600 dark:text-gray-300 font-medium"
                     >
                       <MessageCircle size={15} /> Chat with Vendor
@@ -574,7 +579,7 @@ const ProductDetails = () => {
                     </p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowVendorModal(false)}
                   className="btn btn-circle btn-sm btn-ghost"
                 >
@@ -585,7 +590,7 @@ const ProductDetails = () => {
               <div className="p-6 overflow-y-auto flex-1">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {vendorProducts.map((vp) => (
-                    <div 
+                    <div
                       key={vp.product_id}
                       onClick={() => {
                         setShowVendorModal(false);
@@ -594,9 +599,9 @@ const ProductDetails = () => {
                       className="card bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 cursor-pointer hover:shadow-md transition-all group"
                     >
                       <div className="aspect-square rounded-xl overflow-hidden mb-2 bg-white dark:bg-gray-900">
-                        <img 
-                          src={vp.primary_image || vp.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'} 
-                          alt={vp.product_name} 
+                        <img
+                          src={vp.primary_image || vp.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'}
+                          alt={vp.product_name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
                       </div>

@@ -1,16 +1,18 @@
-import React, { useContext, useState } from 'react';
-import { ShoppingCart, Heart, Eye, Check } from 'lucide-react';
+import { useContext, useState } from 'react';
+import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../../context/CartContext';
 import { AuthContext } from '../../context/AuthContext';
+import { WishlistContext } from '../../context/WishlistStore';
 import { toast } from 'react-toastify';
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const { addToCart } = useContext(CartContext);
+  const { isInWishlist, toggleWishlist } = useContext(WishlistContext);
   const [adding, setAdding] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
+  const [updatingWishlist, setUpdatingWishlist] = useState(false);
 
   const productId = product.product_id || product.id;
   const title = product.product_name || product.title || 'Product';
@@ -49,22 +51,28 @@ const ProductCard = ({ product }) => {
       } else {
         toast.error(res.message || 'Failed to add item to cart');
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to add to cart');
     } finally {
       setAdding(false);
     }
   };
 
-  const handleWishlist = (e) => {
+  const wishlisted = isInWishlist(productId);
+
+  const handleWishlist = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setWishlisted(!wishlisted);
-    if (!wishlisted) {
-      toast.success(`Saved to wishlist! ❤️`);
-    } else {
-      toast.info('Removed from wishlist');
+    if (!user || user.role !== 'CUSTOMER') {
+      toast.info('Sign in with a customer account to save products');
+      navigate('/login?role=customer');
+      return;
     }
+    setUpdatingWishlist(true);
+    const result = await toggleWishlist(productId);
+    setUpdatingWishlist(false);
+    if (!result.success) toast.error(result.message);
+    else toast.success(wishlisted ? 'Removed from wishlist' : 'Saved to wishlist');
   };
 
   return (
@@ -88,16 +96,16 @@ const ProductCard = ({ product }) => {
 
       {/* Hover Action Buttons */}
       <div className="absolute top-3 right-3 z-10 flex flex-col gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300">
-        <button 
+        <button
           onClick={handleWishlist}
+          disabled={updatingWishlist}
           title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
-          className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-            wishlisted ? 'bg-rose-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-rose-500 hover:text-white'
-          }`}
+          className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${wishlisted ? 'bg-rose-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-rose-500 hover:text-white'
+            }`}
         >
           <Heart size={15} className={wishlisted ? 'fill-white' : ''} />
         </button>
-        <Link 
+        <Link
           to={`/product/${productId}`}
           title="Quick View"
           className="w-8 h-8 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary hover:text-white shadow-sm transition-colors"
@@ -108,9 +116,9 @@ const ProductCard = ({ product }) => {
 
       {/* Product Image */}
       <Link to={`/product/${productId}`} className="relative w-full aspect-[4/5] bg-gray-50 dark:bg-gray-800/40 overflow-hidden cursor-pointer block">
-        <img 
-          src={image} 
-          alt={title} 
+        <img
+          src={image}
+          alt={title}
           className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out p-3 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
           onError={(e) => {
             e.target.src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop';
@@ -130,13 +138,13 @@ const ProductCard = ({ product }) => {
             </span>
           )}
         </div>
-        
+
         <Link to={`/product/${productId}`}>
           <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-2 line-clamp-2 leading-snug cursor-pointer hover:text-primary transition-colors">
             {title}
           </h3>
         </Link>
-        
+
         {/* Rating */}
         <div className="flex items-center gap-1 mb-3">
           <div className="flex text-yellow-400">
@@ -158,8 +166,8 @@ const ProductCard = ({ product }) => {
               <span className="text-xs text-gray-400 line-through">৳{oldPrice.toLocaleString()}</span>
             )}
           </div>
-          
-          <button 
+
+          <button
             type="button"
             onClick={handleQuickAdd}
             disabled={adding || isOutOfStock}
