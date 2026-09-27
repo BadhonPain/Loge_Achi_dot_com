@@ -68,7 +68,9 @@ const getCategoryById = async (req, res) => {
 
 
 // CREATE CATEGORY
+// Uses explicit transaction control
 const createCategory = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const {
             parent_category_id,
@@ -77,13 +79,16 @@ const createCategory = async (req, res) => {
         } = req.body;
 
         if (!category_name) {
+            connection.release();
             return res.status(400).json({
                 success: false,
                 message: "category_name is required"
             });
         }
 
-        const [result] = await db.query(`
+        await connection.beginTransaction();
+
+        const [result] = await connection.query(`
             INSERT INTO categories
             (
                 parent_category_id,
@@ -98,6 +103,8 @@ const createCategory = async (req, res) => {
             description || null
         ]);
 
+        await connection.commit();
+
         res.status(201).json({
             success: true,
             message: "Category created successfully",
@@ -105,6 +112,7 @@ const createCategory = async (req, res) => {
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error(error);
 
         if (error.code === "ER_DUP_ENTRY") {
@@ -118,12 +126,16 @@ const createCategory = async (req, res) => {
             success: false,
             message: "Failed to create category"
         });
+    } finally {
+        connection.release();
     }
 };
 
 
 // UPDATE CATEGORY
+// Uses explicit transaction control
 const updateCategory = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const categoryId = req.params.id;
 
@@ -134,7 +146,9 @@ const updateCategory = async (req, res) => {
             status
         } = req.body;
 
-        const [result] = await db.query(`
+        await connection.beginTransaction();
+
+        const [result] = await connection.query(`
             UPDATE categories
             SET
                 parent_category_id = ?,
@@ -151,11 +165,14 @@ const updateCategory = async (req, res) => {
         ]);
 
         if (result.affectedRows === 0) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: "Category not found"
             });
         }
+
+        await connection.commit();
 
         res.status(200).json({
             success: true,
@@ -163,12 +180,15 @@ const updateCategory = async (req, res) => {
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error(error);
 
         res.status(500).json({
             success: false,
             message: "Failed to update category"
         });
+    } finally {
+        connection.release();
     }
 };
 

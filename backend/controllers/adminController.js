@@ -37,34 +37,58 @@ exports.getAllSellers = async (req, res) => {
 };
 
 // Update seller status (approve/suspend) — ADMIN only
+// Uses explicit transaction control
 exports.updateSellerStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   const valid = ['PENDING', 'ACTIVE', 'SUSPENDED', 'INACTIVE'];
   if (!status || !valid.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status. Must be: ' + valid.join(', ') });
 
+  const connection = await db.getConnection();
   try {
-    const [result] = await db.execute('UPDATE sellers SET status = ? WHERE seller_id = ?', [status, id]);
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Seller not found' });
+    await connection.beginTransaction();
+
+    const [result] = await connection.execute('UPDATE sellers SET status = ? WHERE seller_id = ?', [status, id]);
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Seller not found' });
+    }
+
+    await connection.commit();
     res.json({ success: true, message: 'Seller status updated' });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: 'Server error' });
+  } finally {
+    connection.release();
   }
 };
 
 // Update customer status — ADMIN only
+// Uses explicit transaction control
 exports.updateCustomerStatus = async (req, res) => {
   const { id } = req.params;
   const { account_status } = req.body;
   const valid = ['ACTIVE', 'INACTIVE', 'SUSPENDED'];
   if (!account_status || !valid.includes(account_status)) return res.status(400).json({ success: false, message: 'Invalid status' });
 
+  const connection = await db.getConnection();
   try {
-    const [result] = await db.execute('UPDATE customers SET account_status = ? WHERE customer_id = ?', [account_status, id]);
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Customer not found' });
+    await connection.beginTransaction();
+
+    const [result] = await connection.execute('UPDATE customers SET account_status = ? WHERE customer_id = ?', [account_status, id]);
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
+
+    await connection.commit();
     res.json({ success: true, message: 'Customer status updated' });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: 'Server error' });
+  } finally {
+    connection.release();
   }
 };
 
@@ -83,12 +107,24 @@ exports.getAllOrders = async (req, res) => {
 };
 
 // Archive any product — ADMIN only
+// Uses explicit transaction control
 exports.archiveProduct = async (req, res) => {
+  const connection = await db.getConnection();
   try {
-    const [result] = await db.execute("UPDATE products SET status = 'ARCHIVED' WHERE product_id = ?", [req.params.id]);
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Product not found' });
+    await connection.beginTransaction();
+
+    const [result] = await connection.execute("UPDATE products SET status = 'ARCHIVED' WHERE product_id = ?", [req.params.id]);
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    await connection.commit();
     res.json({ success: true, message: 'Product archived by admin' });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: 'Server error' });
+  } finally {
+    connection.release();
   }
 };

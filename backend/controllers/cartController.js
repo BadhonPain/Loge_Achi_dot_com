@@ -82,8 +82,10 @@ const getCart = async (req, res) => {
 
 // =============================================
 // ADD PRODUCT TO CART
+// Uses explicit transaction control
 // =============================================
 const addToCart = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const customerId = req.params.customerId;
 
@@ -97,14 +99,17 @@ const addToCart = async (req, res) => {
             !Number.isInteger(quantity) ||
             quantity <= 0
         ) {
+            connection.release();
             return res.status(400).json({
                 success: false,
                 message: "Valid product_id and quantity are required"
             });
         }
 
+        await connection.beginTransaction();
+
         // Find customer cart
-        const [carts] = await db.query(`
+        const [carts] = await connection.query(`
             SELECT cart_id
             FROM carts
             WHERE customer_id = ?
@@ -112,14 +117,14 @@ const addToCart = async (req, res) => {
 
         let cartId;
         if (carts.length === 0) {
-            const [newCart] = await db.query('INSERT INTO carts (customer_id) VALUES (?)', [customerId]);
+            const [newCart] = await connection.query('INSERT INTO carts (customer_id) VALUES (?)', [customerId]);
             cartId = newCart.insertId;
         } else {
             cartId = carts[0].cart_id;
         }
 
         // Check product
-        const [products] = await db.query(`
+        const [products] = await connection.query(`
             SELECT
                 product_id,
                 stock_quantity,
@@ -129,6 +134,7 @@ const addToCart = async (req, res) => {
         `, [product_id]);
 
         if (products.length === 0) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: "Product not found"
@@ -138,6 +144,7 @@ const addToCart = async (req, res) => {
         const product = products[0];
 
         if (product.status !== "ACTIVE") {
+            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: "Product is not available"
@@ -145,7 +152,7 @@ const addToCart = async (req, res) => {
         }
 
         // Check if product already exists in cart
-        const [existingItems] = await db.query(`
+        const [existingItems] = await connection.query(`
             SELECT
                 cart_item_id,
                 quantity
@@ -162,6 +169,7 @@ const addToCart = async (req, res) => {
         }
 
         if (newQuantity > product.stock_quantity) {
+            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: "Requested quantity exceeds available stock"
@@ -170,7 +178,7 @@ const addToCart = async (req, res) => {
 
         if (existingItems.length > 0) {
 
-            await db.query(`
+            await connection.query(`
                 UPDATE cart_items
                 SET quantity = ?
                 WHERE cart_item_id = ?
@@ -181,7 +189,7 @@ const addToCart = async (req, res) => {
 
         } else {
 
-            await db.query(`
+            await connection.query(`
                 INSERT INTO cart_items
                 (
                     cart_id,
@@ -196,26 +204,33 @@ const addToCart = async (req, res) => {
             ]);
         }
 
+        await connection.commit();
+
         res.status(200).json({
             success: true,
             message: "Product added to cart successfully"
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error(error);
 
         res.status(500).json({
             success: false,
             message: "Failed to add product to cart"
         });
+    } finally {
+        connection.release();
     }
 };
 
 
 // =============================================
 // UPDATE CART ITEM QUANTITY
+// Uses explicit transaction control
 // =============================================
 const updateCartItem = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const customerId = req.params.customerId;
         const cartItemId = req.params.cartItemId;
@@ -223,13 +238,16 @@ const updateCartItem = async (req, res) => {
         const { quantity } = req.body;
 
         if (!Number.isInteger(quantity) || quantity <= 0) {
+            connection.release();
             return res.status(400).json({
                 success: false,
                 message: "Quantity must be greater than 0"
             });
         }
 
-        const [items] = await db.query(`
+        await connection.beginTransaction();
+
+        const [items] = await connection.query(`
             SELECT
                 ci.cart_item_id,
                 p.stock_quantity
@@ -250,6 +268,7 @@ const updateCartItem = async (req, res) => {
         ]);
 
         if (items.length === 0) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: "Cart item not found"
@@ -257,13 +276,14 @@ const updateCartItem = async (req, res) => {
         }
 
         if (quantity > items[0].stock_quantity) {
+            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: "Requested quantity exceeds available stock"
             });
         }
 
-        await db.query(`
+        await connection.query(`
             UPDATE cart_items
             SET quantity = ?
             WHERE cart_item_id = ?
@@ -272,31 +292,40 @@ const updateCartItem = async (req, res) => {
             cartItemId
         ]);
 
+        await connection.commit();
+
         res.status(200).json({
             success: true,
             message: "Cart quantity updated successfully"
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error(error);
 
         res.status(500).json({
             success: false,
             message: "Failed to update cart item"
         });
+    } finally {
+        connection.release();
     }
 };
 
 
 // =============================================
 // DELETE CART ITEM
+// Uses explicit transaction control
 // =============================================
 const deleteCartItem = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const customerId = req.params.customerId;
         const cartItemId = req.params.cartItemId;
 
-        const [result] = await db.query(`
+        await connection.beginTransaction();
+
+        const [result] = await connection.query(`
             DELETE ci
             FROM cart_items ci
 
@@ -311,11 +340,14 @@ const deleteCartItem = async (req, res) => {
         ]);
 
         if (result.affectedRows === 0) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: "Cart item not found"
             });
         }
+
+        await connection.commit();
 
         res.status(200).json({
             success: true,
@@ -323,12 +355,15 @@ const deleteCartItem = async (req, res) => {
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error(error);
 
         res.status(500).json({
             success: false,
             message: "Failed to remove cart item"
         });
+    } finally {
+        connection.release();
     }
 };
 

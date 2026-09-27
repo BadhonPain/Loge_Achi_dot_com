@@ -12,4 +12,7 @@ router.get('/:id', protect, orderController.getOrderById);
 router.get('/seller/me', protect, authorize('SELLER'), orderController.getSellerOrders);
 router.put('/seller/:id/status', protect, authorize('SELLER'), orderController.updateSellerOrderStatus);
 
+// Admin order routes
+router.put('/:id/status', protect, authorize('ADMIN'), orderController.updateOrderStatus);
+
 module.exports = router;
