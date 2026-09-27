@@ -13,7 +13,7 @@ const getAllProducts = async (req, res) => {
                 s.shop_name, s.seller_name, c.category_name, c.category_name AS category,
                 COALESCE(pi.image_url, 'https://cdn-icons-png.flaticon.com/512/13434/13434972.png') AS image,
                 COALESCE(pi.image_url, 'https://cdn-icons-png.flaticon.com/512/13434/13434972.png') AS primary_image,
-                COALESCE(fn_product_avg_rating(p.product_id), 5.0) AS rating,
+                COALESCE(fn_product_avg_rating(p.product_id), 0.0) AS rating,
                 (
                     SELECT COUNT(*) 
                     FROM reviews r 
@@ -82,7 +82,7 @@ const getProductById = async (req, res) => {
                 p.*, p.product_id AS id, p.product_name AS title, p.stock_quantity AS stock,
                 s.shop_name, s.seller_name, s.email AS seller_email, s.phone AS seller_phone,
                 c.category_name, c.category_name AS category,
-                COALESCE(fn_product_avg_rating(p.product_id), 5.0) AS rating,
+                COALESCE(fn_product_avg_rating(p.product_id), 0.0) AS rating,
                 (
                     SELECT COUNT(*) 
                     FROM reviews r 

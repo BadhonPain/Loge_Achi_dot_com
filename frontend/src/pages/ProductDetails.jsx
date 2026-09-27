@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { WishlistContext } from '../context/WishlistStore';
 import { CartContext } from '../context/CartContext';
-import { Star, Heart, ShoppingCart, Truck, ShieldCheck, RotateCcw, Minus, Plus, ChevronRight, Store, Package, MessageCircle, CheckCircle, AlertCircle, Share2 } from 'lucide-react';
+import { Star, Heart, ShoppingCart, Truck, ShieldCheck, RotateCcw, Minus, Plus, Store, Package, MessageCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { getProductById as getMockProductById } from '../data/products';
+import { reviewSubmissionSchema } from '../schemas/reviewSchemas';
 
 const API = 'http://localhost:5000/api';
 
@@ -19,6 +20,11 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reviewsList, setReviewsList] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState({ avg_rating: 0, count: 0 });
+  const [eligibleReviewItems, setEligibleReviewItems] = useState([]);
+  const [selectedOrderItemId, setSelectedOrderItemId] = useState('');
+  const [reviewDataLoading, setReviewDataLoading] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState('');
   const [vendorProducts, setVendorProducts] = useState([]);
   const [showVendorModal, setShowVendorModal] = useState(false);
 
@@ -39,11 +45,7 @@ const ProductDetails = () => {
   const [updatingWishlist, setUpdatingWishlist] = useState(false);
   const isWishlisted = product ? isInWishlist(product.product_id || product.id) : false;
 
-  useEffect(() => {
-    loadProduct();
-  }, [id]);
-
-  const loadProduct = async () => {
+  const loadProduct = useCallback(async () => {
     try {
       setLoading(true);
       // Fetch product from backend
@@ -62,7 +64,7 @@ const ProductDetails = () => {
           oldPrice: p.oldPrice ? Number(p.oldPrice) : null,
           discount: p.discount || null,
           stock: p.stock_quantity !== undefined ? p.stock_quantity : (p.stock || 20),
-          rating: Number(p.rating || 5.0),
+          rating: Number(p.rating ?? 0),
           reviews: p.reviews || 0,
           sold: p.sold || 35,
           description: p.description || 'Premium quality product verified by LogeAchi quality standards. Guaranteed authentic.',
@@ -97,18 +99,71 @@ const ProductDetails = () => {
       }
     } finally {
       setLoading(false);
-      loadReviews();
     }
-  };
+  }, [id]);
 
-  const loadReviews = async () => {
+  useEffect(() => {
+    const request = setTimeout(() => { loadProduct(); }, 0);
+    return () => clearTimeout(request);
+  }, [loadProduct]);
+
+  const loadReviews = useCallback(async () => {
+    setReviewDataLoading(true);
     try {
-      const res = await axios.get(`${API}/reviews/product/${id}`);
-      if (res.data?.success) {
-        setReviewsList(res.data.data || []);
-      }
-    } catch (e) {
-      // Fallback reviews
+      const requests = [axios.get(`${API}/reviews/product/${id}`)];
+      if (user?.role === 'CUSTOMER') requests.push(axios.get(`${API}/reviews/eligible/${id}`));
+      const [reviewsResponse, eligibleResponse] = await Promise.all(requests);
+      setReviewsList(reviewsResponse.data?.data || []);
+      setReviewSummary({
+        avg_rating: Number(reviewsResponse.data?.avg_rating || 0),
+        count: Number(reviewsResponse.data?.count || 0),
+      });
+      const eligibleItems = eligibleResponse?.data?.data || [];
+      setEligibleReviewItems(eligibleItems);
+      setSelectedOrderItemId((current) => (
+        eligibleItems.some((item) => String(item.order_item_id) === String(current))
+          ? current
+          : eligibleItems[0]?.order_item_id || ''
+      ));
+    } catch {
+      setEligibleReviewItems([]);
+    } finally {
+      setReviewDataLoading(false);
+    }
+  }, [id, user]);
+
+  useEffect(() => {
+    const request = setTimeout(() => { loadReviews(); }, 0);
+    return () => clearTimeout(request);
+  }, [loadReviews]);
+
+  const handleReviewSubmit = async (event) => {
+    event.preventDefault();
+    setReviewSubmitError('');
+    const validation = reviewSubmissionSchema.safeParse({
+      order_item_id: selectedOrderItemId,
+      rating: reviewRating,
+      comment: reviewComment,
+    });
+    if (!validation.success) {
+      toast.error(validation.error.issues[0].message);
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      await axios.post(`${API}/reviews`, validation.data);
+      toast.success('Your verified-purchase review has been published.');
+      setReviewComment('');
+      setReviewRating(5);
+      await loadReviews();
+    } catch (error) {
+      const message = error.response?.data?.message || 'Could not submit your review';
+      setReviewSubmitError(message);
+      toast.error(message);
+      if (error.response?.status === 409) await loadReviews();
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -121,7 +176,7 @@ const ProductDetails = () => {
       const res = await axios.get(`${API}/products?seller_id=${product.seller.id}`);
       setVendorProducts(res.data.data || []);
       setShowVendorModal(true);
-    } catch (e) {
+    } catch {
       toast.info(`Viewing ${product.seller.name} store`);
     }
   };
@@ -290,9 +345,9 @@ const ProductDetails = () => {
                       />
                     ))}
                   </div>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{product.rating}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">{reviewSummary.count ? reviewSummary.avg_rating.toFixed(1) : 'No ratings'}</span>
                   <span className="text-gray-300">·</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{product.reviews} reviews</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{reviewSummary.count} reviews</span>
                   <span className="text-gray-300">·</span>
                   <span className="text-sm font-medium text-green-600 dark:text-green-400">{product.sold}+ sold</span>
                 </div>
@@ -515,7 +570,7 @@ const ProductDetails = () => {
                 onClick={() => setActiveTab('reviews')}
                 className={`tab tab-lg font-bold pb-3 ${activeTab === 'reviews' ? 'tab-active text-primary border-primary' : 'text-gray-400'}`}
               >
-                Customer Reviews ({reviewsList.length > 0 ? reviewsList.length : product.reviews})
+                Customer Reviews ({reviewSummary.count})
               </button>
             </div>
 
@@ -535,6 +590,47 @@ const ProductDetails = () => {
               </div>
             ) : (
               <div className="max-w-3xl space-y-6">
+                {user?.role === 'CUSTOMER' && eligibleReviewItems.length > 0 && (
+                  <form onSubmit={handleReviewSubmit} className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 space-y-4">
+                    <div>
+                      <h3 className="font-bold text-gray-900 dark:text-white">Review a delivered purchase</h3>
+                      <p className="text-xs text-gray-500 mt-1">Reviews are linked to a verified order item.</p>
+                    </div>
+                    {eligibleReviewItems.length > 1 && (
+                      <label className="form-control max-w-md">
+                        <span className="label-text mb-1">Purchase</span>
+                        <select value={selectedOrderItemId} onChange={(event) => setSelectedOrderItemId(event.target.value)} className="select select-bordered">
+                          {eligibleReviewItems.map((item) => (
+                            <option key={item.order_item_id} value={item.order_item_id}>
+                              {item.product_name_snapshot} · Order item #{item.order_item_id}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    <fieldset>
+                      <legend className="label-text mb-2">Your rating</legend>
+                      <div className="flex items-center gap-1" role="radiogroup" aria-label="Product rating">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button key={star} type="button" role="radio" aria-checked={reviewRating === star} aria-label={`${star} star${star === 1 ? '' : 's'}`} onClick={() => setReviewRating(star)} className="p-1 focus-visible:outline-2 focus-visible:outline-primary">
+                            <Star size={24} className={star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'} />
+                          </button>
+                        ))}
+                        <span className="ml-2 text-xs text-gray-500">{reviewRating} of 5</span>
+                      </div>
+                    </fieldset>
+                    <label className="form-control">
+                      <span className="label-text mb-1">Review (optional)</span>
+                      <textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} rows={4} maxLength={1000} className="textarea textarea-bordered w-full" placeholder="Share details that may help other customers." />
+                      <span className="text-right text-xs text-gray-400 mt-1">{reviewComment.length}/1000</span>
+                    </label>
+                    {reviewSubmitError && <p role="alert" className="text-sm text-red-600">{reviewSubmitError}</p>}
+                    <button type="submit" disabled={submittingReview || reviewDataLoading} className="btn btn-primary text-white">
+                      {submittingReview ? 'Submitting…' : 'Submit review'}
+                    </button>
+                  </form>
+                )}
+                {reviewDataLoading && <p className="text-sm text-gray-500">Loading reviews…</p>}
                 {reviewsList.length > 0 ? (
                   reviewsList.map((review) => (
                     <div key={review.review_id || review.id} className="border-b border-gray-100 dark:border-gray-800 pb-6 last:border-0">
@@ -551,13 +647,13 @@ const ProductDetails = () => {
                           <Star key={i} size={14} className={i < review.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200 dark:text-gray-700'} />
                         ))}
                       </div>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm">{review.comment}</p>
+                      {review.comment && <p className="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap">{review.comment}</p>}
                     </div>
                   ))
                 ) : (
                   <div className="p-8 text-center bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800">
                     <p className="text-gray-500 font-medium text-sm">No reviews yet for this product.</p>
-                    <p className="text-xs text-gray-400 mt-1">Purchased this item? Leave your review after order delivery!</p>
+                    <p className="text-xs text-gray-400 mt-1">Only customers with a delivered purchase can review this product.</p>
                   </div>
                 )}
               </div>
