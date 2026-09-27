@@ -9,6 +9,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import HomePage from './pages/HomePage';
 import BecomeVendor from './pages/BecomeVendor';
+import VendorApplicationStatus from './pages/VendorApplicationStatus';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ProductDetails from './pages/ProductDetails';
@@ -63,6 +64,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/seller" element={<BecomeVendor />} />
+                <Route path="/seller/application/:reference" element={<VendorApplicationStatus />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/product/:id" element={<ProductDetails />} />

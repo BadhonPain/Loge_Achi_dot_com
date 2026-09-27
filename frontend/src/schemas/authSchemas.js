@@ -22,32 +22,32 @@ export const customerRegistrationSchema = withMatchingPasswords(z.object({
     phone: z.string().trim().optional(),
 }));
 
-export const sellerRegistrationSchema = withMatchingPasswords(z.object({
-    seller_name: z.string().trim().min(1, 'Enter your name'),
-    shop_name: z.string().trim().min(1, 'Enter your shop name'),
-    email: emailSchema,
-    password: registrationPasswordSchema,
-    confirmPassword: z.string().min(1, 'Confirm your password'),
-    phone: z.string().trim().optional(),
-    address: z.string().trim().optional(),
-}));
-
-export const vendorAccountSchema = withMatchingPasswords(z.object({
-    fullName: z.string().trim().min(1, 'Enter your name'),
+export const vendorApplicationSchema = z.object({
+    full_name: z.string().trim().min(1, 'Enter your full name'),
     email: emailSchema,
     phone: z.string().trim().min(1, 'Enter your phone number'),
     password: registrationPasswordSchema,
-    confirmPassword: z.string().min(1, 'Confirm your password'),
+    confirm_password: z.string().min(1, 'Confirm your password'),
+    store_name: z.string().trim().min(1, 'Enter your store name'),
+    category_id: z.coerce.number().int().positive('Choose a business category'),
+    business_description: z.string().trim().min(1, 'Describe your business'),
+    address: z.string().trim().min(1, 'Enter your address'),
+    city: z.string().trim().min(1, 'Enter your city'),
+    postal_code: z.string().trim().min(1, 'Enter your postal code'),
+    country: z.string().trim().min(1, 'Enter your country'),
+}).refine(
+    (values) => values.password === values.confirm_password,
+    { path: ['confirm_password'], message: 'Passwords do not match' }
+).transform((values) => ({
+    full_name: values.full_name,
+    email: values.email,
+    phone: values.phone,
+    password: values.password,
+    store_name: values.store_name,
+    category_id: values.category_id,
+    business_description: values.business_description,
+    address: values.address,
+    city: values.city,
+    postal_code: values.postal_code,
+    country: values.country,
 }));
-
-export const vendorBusinessSchema = z.object({
-    businessName: z.string().trim().min(1, 'Enter your business name'),
-    businessType: z.string().min(1, 'Select a business type'),
-    category: z.string().min(1, 'Select a category'),
-    address: z.string().trim().min(1, 'Enter your business address'),
-});
-
-export const vendorStoreSchema = z.object({
-    storeName: z.string().trim().min(1, 'Enter your store name'),
-    agreedToTerms: z.boolean().refine(Boolean, 'You must agree to the Terms'),
-});

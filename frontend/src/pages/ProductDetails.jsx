@@ -133,7 +133,7 @@ const ProductDetails = () => {
       return;
     }
     if (user.role !== 'CUSTOMER') {
-      toast.info('Sign in with a customer account to purchase items');
+      toast.info('Cart is available only to customer accounts.');
       return;
     }
     setAddingToCart(true);
@@ -152,9 +152,13 @@ const ProductDetails = () => {
   };
 
   const handleWishlistToggle = async () => {
-    if (!user || user.role !== 'CUSTOMER') {
+    if (!user) {
       toast.info('Sign in with a customer account to save products');
       navigate('/login?role=customer');
+      return;
+    }
+    if (user.role !== 'CUSTOMER') {
+      toast.info('Wishlist is available only to customer accounts.');
       return;
     }
     setUpdatingWishlist(true);

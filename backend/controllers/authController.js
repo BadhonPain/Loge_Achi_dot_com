@@ -1,7 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { customerRegistrationSchema, sellerRegistrationSchema, loginSchema } = require('../schemas/authSchemas');
+const { customerRegistrationSchema, loginSchema } = require('../schemas/authSchemas');
 
 const generateToken = (id, email, role) => {
   return jwt.sign({ id, email, role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
@@ -47,38 +47,6 @@ exports.registerCustomer = async (req, res) => {
   } catch (error) {
     console.error(error);
     if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'Email already in use' });
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Register Seller
-exports.registerSeller = async (req, res) => {
-  const validation = sellerRegistrationSchema.safeParse(req.body);
-  if (!validation.success) {
-    return res.status(400).json({ message: validation.error.issues[0].message, errors: validation.error.issues });
-  }
-  const { seller_name, shop_name, email, password, phone, address } = validation.data;
-
-  try {
-    const [existing] = await db.execute(
-      'SELECT email FROM customers WHERE email = ? UNION SELECT email FROM sellers WHERE email = ? UNION SELECT email FROM admins WHERE email = ?',
-      [email, email, email]
-    );
-    if (existing.length > 0) return res.status(409).json({ message: 'Email already in use' });
-
-    const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(password, salt);
-
-    const [result] = await db.execute(
-      'INSERT INTO sellers (seller_name, shop_name, email, password_hash, phone, address, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [seller_name, shop_name, email, hash, phone || null, address || null, 'ACTIVE']
-    );
-
-    const token = generateToken(result.insertId, email, 'SELLER');
-    res.status(201).json({ message: 'Seller registered', token, user: { id: result.insertId, name: seller_name, email, role: 'SELLER' } });
-  } catch (error) {
-    console.error(error);
-    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'Shop name, email or phone already exists' });
     res.status(500).json({ message: 'Server error' });
   }
 };

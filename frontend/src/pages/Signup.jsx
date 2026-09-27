@@ -1,17 +1,16 @@
 import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Eye, EyeOff, User, Store, Mail, Lock, Phone, MapPin, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Lock, Phone, AlertCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
-import { customerRegistrationSchema, sellerRegistrationSchema } from '../schemas/authSchemas';
+import { customerRegistrationSchema } from '../schemas/authSchemas';
 
 const Signup = () => {
-  const { register, registerSeller } = useContext(AuthContext);
+  const { register, user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [mode, setMode] = useState('customer');
-  const [form, setForm] = useState({ name: '', seller_name: '', shop_name: '', email: '', password: '', confirmPassword: '', phone: '', address: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,8 +20,7 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const schema = mode === 'customer' ? customerRegistrationSchema : sellerRegistrationSchema;
-    const validation = schema.safeParse(form);
+    const validation = customerRegistrationSchema.safeParse(form);
     if (!validation.success) {
       const msg = validation.error.issues[0].message;
       setError(msg);
@@ -31,16 +29,11 @@ const Signup = () => {
     }
     const values = validation.data;
     setLoading(true);
-    let result;
-    if (mode === 'customer') {
-      result = await register(values.name, values.email, values.password, values.phone);
-    } else {
-      result = await registerSeller(values.seller_name, values.shop_name, values.email, values.password, values.phone, values.address);
-    }
+    const result = await register(values.name, values.email, values.password, values.phone);
     setLoading(false);
     if (result.success) {
       toast.success(`Account created successfully! Welcome to LogeAchi! 🎉`);
-      navigate(mode === 'seller' ? '/seller-dashboard' : '/');
+      navigate('/');
     } else {
       const msg = result.message || 'Registration failed';
       setError(msg);
@@ -57,28 +50,10 @@ const Signup = () => {
         <div className="card w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-800">
           <div className="bg-gray-900 dark:bg-gray-800 p-8 text-center">
             <h2 className="text-3xl font-black text-white mb-2">Create Account</h2>
-            <p className="text-gray-400 text-sm">Join LogeAchi and start shopping or selling</p>
+            <p className="text-gray-400 text-sm">Create your customer account</p>
           </div>
 
           <div className="p-8">
-            {/* Role Toggle with DaisyUI tabs */}
-            <div className="tabs tabs-boxed w-full bg-gray-100 dark:bg-gray-800 p-1 rounded-2xl mb-6">
-              <button
-                type="button"
-                onClick={() => setMode('customer')}
-                className={`tab flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${mode === 'customer' ? 'tab-active bg-white dark:bg-gray-700 text-primary shadow-sm' : 'text-gray-500'}`}
-              >
-                <User size={16} /> Customer
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('seller')}
-                className={`tab flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${mode === 'seller' ? 'tab-active bg-white dark:bg-gray-700 text-primary shadow-sm' : 'text-gray-500'}`}
-              >
-                <Store size={16} /> Seller
-              </button>
-            </div>
-
             {error && (
               <div className="alert alert-error text-white text-xs font-medium p-3 rounded-xl mb-4 flex items-center gap-2">
                 <AlertCircle size={16} />
@@ -87,35 +62,13 @@ const Signup = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Customer: Full Name */}
-              {mode === 'customer' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Full Name</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400"><User size={18} /></div>
-                    <input value={form.name} onChange={set('name')} placeholder="Your full name" required className={inputClass} />
-                  </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Full Name</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400"><User size={18} /></div>
+                  <input value={form.name} onChange={set('name')} placeholder="Your full name" required className={inputClass} />
                 </div>
-              )}
-              {/* Seller: Name + Shop */}
-              {mode === 'seller' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Seller Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400"><User size={18} /></div>
-                      <input value={form.seller_name} onChange={set('seller_name')} placeholder="Your name" required className={inputClass} />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Shop Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400"><Store size={18} /></div>
-                      <input value={form.shop_name} onChange={set('shop_name')} placeholder="Your shop name" required className={inputClass} />
-                    </div>
-                  </div>
-                </>
-              )}
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
                 <div className="relative">
@@ -130,15 +83,6 @@ const Signup = () => {
                   <input type="tel" value={form.phone} onChange={set('phone')} placeholder="+880 1XXX-XXXXXX" className={inputClass} />
                 </div>
               </div>
-              {mode === 'seller' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Business Address</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400"><MapPin size={18} /></div>
-                    <input value={form.address} onChange={set('address')} placeholder="Street, Thana, District" className={inputClass} />
-                  </div>
-                </div>
-              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
@@ -167,7 +111,7 @@ const Signup = () => {
                     <span>Creating Account...</span>
                   </>
                 ) : (
-                  `Create ${mode === 'seller' ? 'Seller' : 'Customer'} Account`
+                  'Create Customer Account'
                 )}
               </button>
             </form>
@@ -176,6 +120,12 @@ const Signup = () => {
               Already have an account?{' '}
               <Link to="/login" className="text-primary font-bold hover:underline">Sign in</Link>
             </div>
+            {user?.role !== 'SELLER' && (
+              <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                Want to sell on LogeAchi?{' '}
+                <Link to="/seller" className="text-primary font-bold hover:underline">Apply to become a vendor</Link>
+              </div>
+            )}
           </div>
         </div>
       </main>

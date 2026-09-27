@@ -5,9 +5,9 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
-import { 
-  Users, Store, Package, ShoppingCart, DollarSign, Shield, CheckCircle, 
-  Ban, AlertCircle, BarChart3, TrendingUp, Award, Layers, History, X 
+import {
+  Users, Store, Package, ShoppingCart, DollarSign, Shield, CheckCircle,
+  Ban, AlertCircle, BarChart3, TrendingUp, Award, Layers, History, X
 } from 'lucide-react';
 
 const API_ADMIN = 'http://localhost:5000/api/admin';
@@ -21,6 +21,13 @@ const AdminDashboard = () => {
   const [customers, setCustomers] = useState([]);
   const [sellers, setSellers] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [applicationsError, setApplicationsError] = useState('');
+  const [applicationRefresh, setApplicationRefresh] = useState(0);
+  const [rejectionApplication, setRejectionApplication] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [reviewingApplicationId, setReviewingApplicationId] = useState(null);
   const [tab, setTab] = useState('overview');
   const [loading, setLoading] = useState(false);
 
@@ -47,6 +54,24 @@ const AdminDashboard = () => {
       loadAnalytics();
     }
   }, [tab]);
+
+  useEffect(() => {
+    if (tab !== 'applications') return undefined;
+    let active = true;
+    Promise.resolve().then(() => {
+      if (!active) return undefined;
+      setApplicationsLoading(true);
+      setApplicationsError('');
+      return axios.get(`${API_ADMIN}/vendor-applications`);
+    }).then((response) => {
+      if (active && response) setApplications(response.data.data || []);
+    }).catch((error) => {
+      if (active) setApplicationsError(error.response?.data?.message || 'Failed to load vendor applications');
+    }).finally(() => {
+      if (active) setApplicationsLoading(false);
+    });
+    return () => { active = false; };
+  }, [tab, applicationRefresh]);
 
   const loadData = async () => {
     try {
@@ -97,6 +122,25 @@ const AdminDashboard = () => {
       loadData();
     } catch (err) {
       toast.error('Failed to update seller status');
+    }
+  };
+
+  const reviewVendorApplication = async (application, status, reason = '') => {
+    setReviewingApplicationId(application.application_id);
+    try {
+      await axios.put(`${API_ADMIN}/vendor-applications/${application.application_id}/review`, {
+        status,
+        rejection_reason: reason,
+      });
+      toast.success(status === 'APPROVED' ? 'Application approved and seller account activated' : `Application moved to ${status.toLowerCase().replace('_', ' ')}`);
+      setRejectionApplication(null);
+      setRejectionReason('');
+      setApplicationRefresh((value) => value + 1);
+      if (status === 'APPROVED') loadData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Could not update application');
+    } finally {
+      setReviewingApplicationId(null);
     }
   };
 
@@ -217,20 +261,79 @@ const AdminDashboard = () => {
 
         {/* DaisyUI Tabs */}
         <div className="tabs tabs-boxed w-fit bg-gray-100 dark:bg-gray-900 p-1 rounded-2xl mb-6 flex-wrap">
-          {['overview', 'analytics', 'customers', 'sellers', 'orders'].map(t => (
+          {['overview', 'analytics', 'customers', 'sellers', 'applications', 'orders'].map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`tab rounded-xl font-bold text-sm px-6 capitalize transition-all ${
-                tab === t ? 'tab-active bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-              }`}
+              className={`tab rounded-xl font-bold text-sm px-6 capitalize transition-all ${tab === t ? 'tab-active bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                }`}
             >
-              {t === 'overview' ? 'Overview' : 
-               t === 'analytics' ? '📊 Analytics & Complex Queries' : 
-               `${t} (${t === 'customers' ? customers.length : t === 'sellers' ? sellers.length : orders.length})`}
+              {t === 'overview' ? 'Overview' :
+                t === 'analytics' ? '📊 Analytics & Complex Queries' :
+                  `${t} (${t === 'customers' ? customers.length : t === 'sellers' ? sellers.length : t === 'applications' ? applications.filter((application) => !['APPROVED', 'REJECTED'].includes(application.status)).length : orders.length})`}
             </button>
           ))}
         </div>
+
+        {tab === 'applications' && (
+          <section className="card bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm mb-8">
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <div>
+                <h2 className="text-lg font-black text-gray-900 dark:text-white">Vendor Applications</h2>
+                <p className="text-xs text-gray-500 mt-1">Review applications before creating seller accounts.</p>
+              </div>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setApplicationRefresh((value) => value + 1)}>Refresh</button>
+            </div>
+            {applicationsLoading ? (
+              <div className="py-12 text-center text-sm text-gray-500">Loading applications…</div>
+            ) : applicationsError ? (
+              <div role="alert" className="alert alert-error">{applicationsError}</div>
+            ) : applications.length === 0 ? (
+              <div className="py-12 text-center text-sm text-gray-500">No vendor applications have been submitted.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="table table-zebra w-full text-sm">
+                  <thead><tr className="text-xs uppercase text-gray-500"><th>Applicant</th><th>Store</th><th>Business</th><th>Location</th><th>Status</th><th>Decision</th></tr></thead>
+                  <tbody>
+                    {applications.map((application) => (
+                      <tr key={application.application_id}>
+                        <td><strong>{application.full_name}</strong><p className="text-xs text-gray-500">{application.email}<br />{application.phone}</p></td>
+                        <td><strong>{application.store_name}</strong><p className="text-xs text-gray-500">{application.category_name}</p></td>
+                        <td className="min-w-64"><details><summary className="cursor-pointer text-primary font-semibold">View description</summary><p className="whitespace-pre-wrap text-xs text-gray-600 dark:text-gray-300 mt-2">{application.business_description}</p></details></td>
+                        <td className="text-xs">{[application.address, application.city, application.postal_code, application.country].filter(Boolean).join(', ')}</td>
+                        <td><span className={`badge badge-sm ${application.status === 'APPROVED' ? 'badge-success' : application.status === 'REJECTED' ? 'badge-error' : 'badge-warning'}`}>{application.status.replace('_', ' ')}</span>
+                          {application.rejection_reason && <p className="text-xs text-red-500 mt-1 max-w-40">{application.rejection_reason}</p>}
+                        </td>
+                        <td><div className="flex flex-wrap gap-1.5 min-w-40">
+                          {['PENDING', 'UNDER_REVIEW'].includes(application.status) ? <>
+                            {application.status === 'PENDING' && <button type="button" disabled={reviewingApplicationId === application.application_id} onClick={() => reviewVendorApplication(application, 'UNDER_REVIEW')} className="btn btn-outline btn-xs">Review</button>}
+                            <button type="button" disabled={reviewingApplicationId === application.application_id} onClick={() => reviewVendorApplication(application, 'APPROVED')} className="btn btn-success btn-xs text-white">Approve</button>
+                            <button type="button" disabled={reviewingApplicationId === application.application_id} onClick={() => { setRejectionApplication(application); setRejectionReason(''); }} className="btn btn-error btn-xs text-white">Reject</button>
+                          </> : <span className="text-xs text-gray-400">Decision recorded</span>}
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+
+        {rejectionApplication && (
+          <div className="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="reject-application-title">
+            <div className="modal-box">
+              <h2 id="reject-application-title" className="text-lg font-bold">Reject application</h2>
+              <p className="text-sm text-gray-500 mt-1">The applicant can see this reason on their status page.</p>
+              <textarea value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} rows={4} maxLength={2000} className="textarea textarea-bordered w-full mt-4" placeholder="Explain what needs to be addressed" />
+              <div className="modal-action">
+                <button type="button" className="btn btn-ghost" onClick={() => setRejectionApplication(null)}>Cancel</button>
+                <button type="button" className="btn btn-error text-white" disabled={!rejectionReason.trim() || reviewingApplicationId === rejectionApplication.application_id} onClick={() => reviewVendorApplication(rejectionApplication, 'REJECTED', rejectionReason)}>Confirm rejection</button>
+              </div>
+            </div>
+            <button type="button" className="modal-backdrop" aria-label="Close rejection dialog" onClick={() => setRejectionApplication(null)}>close</button>
+          </div>
+        )}
 
         {/* ============================================= */}
         {/* ANALYTICS TAB: COMPLEX QUERIES DEMONSTRATION */}
@@ -545,13 +648,12 @@ const AdminDashboard = () => {
                       </td>
                       <td className="text-gray-500 text-xs">{s.email}</td>
                       <td>
-                        <span className={`badge badge-sm font-bold ${
-                          s.status === 'ACTIVE'
-                            ? 'badge-success text-white'
-                            : s.status === 'PENDING'
+                        <span className={`badge badge-sm font-bold ${s.status === 'ACTIVE'
+                          ? 'badge-success text-white'
+                          : s.status === 'PENDING'
                             ? 'badge-warning text-white'
                             : 'badge-error text-white'
-                        }`}>
+                          }`}>
                           {s.status}
                         </span>
                       </td>
@@ -614,13 +716,12 @@ const AdminDashboard = () => {
                       <td className="text-gray-700 dark:text-gray-300 font-medium">{o.customer_name}</td>
                       <td className="font-black text-primary">৳{Number(o.total_amount || o.grand_total).toLocaleString()}</td>
                       <td>
-                        <span className={`badge badge-sm font-bold ${
-                          o.order_status === 'DELIVERED'
-                            ? 'badge-success text-white'
-                            : o.order_status === 'CANCELLED'
+                        <span className={`badge badge-sm font-bold ${o.order_status === 'DELIVERED'
+                          ? 'badge-success text-white'
+                          : o.order_status === 'CANCELLED'
                             ? 'badge-error text-white'
                             : 'badge-info text-white'
-                        }`}>
+                          }`}>
                           {o.order_status}
                         </span>
                       </td>
