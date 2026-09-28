@@ -7,6 +7,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 router.get('/product/:productId', reviewController.getProductReviews);
 
 // Customer: Create review & get my reviews
+router.get('/eligible/:productId', protect, authorize('CUSTOMER'), reviewController.getEligibleReviewItems);
 router.post('/', protect, authorize('CUSTOMER'), reviewController.createReview);
 router.get('/my', protect, authorize('CUSTOMER'), reviewController.getMyReviews);
 

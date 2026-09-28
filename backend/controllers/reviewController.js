@@ -1,4 +1,24 @@
 const db = require('../config/db');
+const { reviewSubmissionSchema } = require('../schemas/reviewSchemas');
+
+exports.getEligibleReviewItems = async (req, res) => {
+  try {
+    const [items] = await db.execute(`
+      SELECT oi.order_item_id, oi.product_name_snapshot, o.created_at AS delivered_order_date
+      FROM order_items oi
+      JOIN seller_orders so ON oi.seller_order_id = so.seller_order_id
+      JOIN orders o ON so.order_id = o.order_id
+      LEFT JOIN reviews r ON r.order_item_id = oi.order_item_id
+      WHERE oi.product_id = ? AND o.customer_id = ?
+        AND o.order_status = 'DELIVERED' AND r.review_id IS NULL
+      ORDER BY o.created_at DESC
+    `, [req.params.productId, req.user.id]);
+    res.json({ success: true, data: items });
+  } catch (error) {
+    console.error('Get Eligible Review Items Error:', error);
+    res.status(500).json({ success: false, message: 'Could not load eligible purchases' });
+  }
+};
 
 // =============================================
 // CREATE REVIEW — Customer only, must own the order item
@@ -6,11 +26,15 @@ const db = require('../config/db');
 // =============================================
 exports.createReview = async (req, res) => {
   const customerId = req.user.id;
-  const { order_item_id, rating, comment } = req.body;
-
-  if (!order_item_id || !rating || rating < 1 || rating > 5) {
-    return res.status(400).json({ success: false, message: 'order_item_id and rating (1-5) are required' });
+  const validation = reviewSubmissionSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      success: false,
+      message: validation.error.issues[0].message,
+      errors: validation.error.issues,
+    });
   }
+  const { order_item_id, rating, comment } = validation.data;
 
   const connection = await db.getConnection();
   try {
