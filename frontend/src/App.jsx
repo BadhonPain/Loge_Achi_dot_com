@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useLayoutEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { WishlistProvider } from './context/WishlistContext';
@@ -20,6 +20,8 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import WishlistPage from './pages/WishlistPage';
+import WhyLogeAchi from './pages/WhyLogeAchi';
+import FooterInfoPage from './pages/FooterInfoPage';
 
 const ROLE_HOME = {
   ADMIN: '/admin',
@@ -42,6 +44,16 @@ const RequireAuth = ({ roles, children }) => {
   return children;
 };
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 function App() {
   return (
     <ThemeProvider>
@@ -49,6 +61,7 @@ function App() {
         <WishlistProvider>
           <CartProvider>
             <Router>
+              <ScrollToTop />
               <ToastContainer
                 position="top-right"
                 autoClose={2500}
@@ -63,6 +76,8 @@ function App() {
               />
               <Routes>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/why-logeachi" element={<WhyLogeAchi />} />
+                <Route path="/info/:slug" element={<FooterInfoPage />} />
                 <Route path="/seller" element={<BecomeVendor />} />
                 <Route path="/seller/application/:reference" element={<VendorApplicationStatus />} />
                 <Route path="/login" element={<Login />} />
