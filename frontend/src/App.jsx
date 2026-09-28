@@ -20,6 +20,7 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import WishlistPage from './pages/WishlistPage';
+import WhyLogeAchi from './pages/WhyLogeAchi';
 
 const ROLE_HOME = {
   ADMIN: '/admin',
@@ -63,6 +64,7 @@ function App() {
               />
               <Routes>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/why-logeachi" element={<WhyLogeAchi />} />
                 <Route path="/seller" element={<BecomeVendor />} />
                 <Route path="/seller/application/:reference" element={<VendorApplicationStatus />} />
                 <Route path="/login" element={<Login />} />

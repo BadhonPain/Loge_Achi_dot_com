@@ -1,14 +1,15 @@
-import React from 'react';
-import { Mail, MapPin, Phone } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Mail, MapPin, Phone, Sparkles } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 const Footer = () => {
+  const { pathname } = useLocation();
+
   return (
     <footer className="bg-gray-900 pt-16 pb-8 border-t border-gray-800">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-          
+
           {/* Brand Info */}
           <div>
             <Link to="/" className="inline-block mb-6">
@@ -55,6 +56,13 @@ const Footer = () => {
           <div>
             <h3 className="text-white font-bold mb-6 tracking-wider uppercase text-sm">LogeAchi</h3>
             <ul className="space-y-3">
+              {pathname !== '/why-logeachi' && (
+                <li>
+                  <Link to="/why-logeachi" className="footer-why-link inline-flex items-center gap-2 text-sm font-semibold">
+                    <Sparkles size={14} /> Why LogeAchi?
+                  </Link>
+                </li>
+              )}
               <li><a href="#" className="text-gray-400 hover:text-primary text-sm transition-colors">About Us</a></li>
               <li><a href="#" className="text-gray-400 hover:text-primary text-sm transition-colors">Careers</a></li>
               <li><a href="#" className="text-gray-400 hover:text-primary text-sm transition-colors">LogeAchi Blog</a></li>
@@ -80,11 +88,11 @@ const Footer = () => {
                 <span className="text-gray-400 text-sm">support@logeachi.com</span>
               </li>
             </ul>
-            
+
             <div className="relative">
-              <input 
-                type="email" 
-                placeholder="Your email address" 
+              <input
+                type="email"
+                placeholder="Your email address"
                 className="w-full bg-gray-800 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-primary text-sm"
               />
               <button className="absolute right-1 top-1 bottom-1 bg-primary hover:bg-orange-600 text-white px-4 rounded-md text-sm font-medium transition-colors">
@@ -100,7 +108,7 @@ const Footer = () => {
           <p className="text-gray-500 text-sm">
             &copy; {new Date().getFullYear()} LogeAchi.com. All Rights Reserved.
           </p>
-          
+
           {/* Payment Methods Placeholder */}
           <div className="flex items-center gap-3">
             <span className="text-gray-500 text-sm mr-2">Payment Methods:</span>
