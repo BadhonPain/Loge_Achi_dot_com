@@ -159,7 +159,9 @@ const createCustomer = async (req, res) => {
 
 
 // UPDATE CUSTOMER
+// Uses explicit transaction control
 const updateCustomer = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const customerId = req.params.id;
 
@@ -170,7 +172,9 @@ const updateCustomer = async (req, res) => {
             account_status
         } = req.body;
 
-        const [result] = await db.query(`
+        await connection.beginTransaction();
+
+        const [result] = await connection.query(`
             UPDATE customers
             SET
                 name = ?,
@@ -187,11 +191,14 @@ const updateCustomer = async (req, res) => {
         ]);
 
         if (result.affectedRows === 0) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: "Customer not found"
             });
         }
+
+        await connection.commit();
 
         res.status(200).json({
             success: true,
@@ -199,12 +206,15 @@ const updateCustomer = async (req, res) => {
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error(error);
 
         res.status(500).json({
             success: false,
             message: "Failed to update customer"
         });
+    } finally {
+        connection.release();
     }
 };
 

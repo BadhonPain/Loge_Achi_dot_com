@@ -1,34 +1,45 @@
-require("dotenv").config();
-const productRoutes = require("./routes/productRoutes");
-const sellerRoutes = require("./routes/sellerRoutes");
-const categoryRoutes = require("./routes/categoryRoutes");
-const customerRoutes = require("./routes/customerRoutes");
-const addressRoutes = require("./routes/addressRoutes");
-const express = require("express");
-const cors = require("cors");
-const cartRoutes = require("./routes/cartRoutes");
-const db = require("./config/db");
-const imageRoutes = require("./routes/imageRoutes");
-const offerRoutes = require("./routes/offerRoutes");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const db = require('./config/db');
+
+const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const productRoutes = require('./routes/productRoutes');
+const sellerRoutes = require('./routes/sellerRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const customerRoutes = require('./routes/customerRoutes');
+const addressRoutes = require('./routes/addressRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
+const vendorApplicationRoutes = require('./routes/vendorApplicationRoutes');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
-app.use("/api/products", productRoutes);
-app.use("/api/sellers", sellerRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/customers", customerRoutes);
-app.use("/api/products", imageRoutes);
-app.use("/api/customers", addressRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/offers", offerRoutes);
-// Basic route
-app.get("/", (req, res) => {
-    res.json({
-        success: true,
-        message: "Loge Achi API is running"
-    });
+
+// --- API Routes ---
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/sellers', sellerRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/vendor-applications', vendorApplicationRoutes);
+
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'Loge Achi API is running' });
 });
 
 async function startServer() {

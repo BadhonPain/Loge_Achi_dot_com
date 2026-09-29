@@ -12,7 +12,7 @@ const slides = [
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1550009158-9ebf6d97315f?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1618166080964-cdb5843979b0?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     tag: 'TECH WEEK',
     title: 'Next-Gen Electronics',
     subtitle: 'Upgrade your workspace with premium gadgets up to 40% off.',

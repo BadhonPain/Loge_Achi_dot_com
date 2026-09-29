@@ -1,6 +1,6 @@
 const db = require('../config/db');
 
-// Place Order — CUSTOMER only, uses authenticated customer ID
+// Place Order — CUSTOMER only, uses stored procedure sp_place_order for atomic multi-step workflow
 exports.placeOrder = async (req, res) => {
   const customerId = req.user.id;
   const { address_id, payment_method } = req.body;
@@ -16,154 +16,30 @@ exports.placeOrder = async (req, res) => {
 
   const connection = await db.getConnection();
   try {
-    await connection.beginTransaction();
-
-    // 1. Fetch delivery address snapshot
-    const [addresses] = await connection.execute(
-      'SELECT * FROM customer_addresses WHERE address_id = ? AND customer_id = ?',
-      [address_id, customerId]
+    // Call MySQL Stored Procedure sp_place_order (CSE216 Requirement: Multi-step transaction workflow in procedure)
+    await connection.query(
+      'CALL sp_place_order(?, ?, ?, @order_id, @grand_total, @result_msg)',
+      [customerId, address_id, payment_method]
     );
 
-    if (addresses.length === 0) {
-      await connection.rollback();
-      return res.status(404).json({ success: false, message: 'Delivery address not found' });
-    }
-    const addr = addresses[0];
-
-    // 2. Fetch customer cart
-    const [carts] = await connection.execute('SELECT cart_id FROM carts WHERE customer_id = ?', [customerId]);
-    if (carts.length === 0) {
-      await connection.rollback();
-      return res.status(404).json({ success: false, message: 'Cart not found' });
-    }
-    const cartId = carts[0].cart_id;
-
-    // 3. Fetch cart items with product details
-    const [items] = await connection.execute(
-      `SELECT ci.cart_item_id, ci.product_id, ci.quantity, p.price, p.stock_quantity, p.product_name, p.sku, p.seller_id
-       FROM cart_items ci
-       JOIN products p ON ci.product_id = p.product_id
-       WHERE ci.cart_id = ? AND p.status = 'ACTIVE'`,
-      [cartId]
+    const [[result]] = await connection.query(
+      'SELECT @order_id AS order_id, @grand_total AS total, @result_msg AS message'
     );
 
-    if (items.length === 0) {
-      await connection.rollback();
-      return res.status(400).json({ success: false, message: 'Your cart is empty' });
+    if (!result || !result.order_id || Number(result.order_id) === 0) {
+      return res.status(400).json({
+        success: false,
+        message: result ? result.message : 'Order placement failed'
+      });
     }
 
-    // 4. Validate stock for each item
-    for (const item of items) {
-      if (item.quantity > item.stock_quantity) {
-        await connection.rollback();
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient stock for "${item.product_name}". Available: ${item.stock_quantity}`
-        });
-      }
-    }
-
-    // 5. Calculate totals according to DB check constraints:
-    // chk_orders_grand_total: grand_total = (items_subtotal - discount_total) + shipping_fee
-    const itemsSubtotal = items.reduce((sum, i) => sum + (Number(i.price) * Number(i.quantity)), 0);
-    const discountTotal = 0.00;
-    const shippingFee = 0.00;
-    const grandTotal = itemsSubtotal - discountTotal + shippingFee;
-
-    // 6. Insert Order into orders table (exact schema columns)
-    const [orderResult] = await connection.execute(
-      `INSERT INTO orders (
-        customer_id, items_subtotal, discount_total, shipping_fee, grand_total,
-        order_status, shipping_name, shipping_phone, shipping_address_line1,
-        shipping_address_line2, shipping_city, shipping_postal_code, shipping_country
-      ) VALUES (?, ?, ?, ?, ?, 'CONFIRMED', ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        customerId,
-        itemsSubtotal,
-        discountTotal,
-        shippingFee,
-        grandTotal,
-        addr.recipient_name,
-        addr.phone,
-        addr.address_line1,
-        addr.address_line2 || null,
-        addr.city,
-        addr.postal_code || null,
-        addr.country || 'Bangladesh'
-      ]
-    );
-    const orderId = orderResult.insertId;
-
-    // 7. Group items by seller for seller_orders table
-    const sellerGroups = {};
-    items.forEach(item => {
-      if (!sellerGroups[item.seller_id]) sellerGroups[item.seller_id] = [];
-      sellerGroups[item.seller_id].push(item);
-    });
-
-    for (const [sellerId, sellerItems] of Object.entries(sellerGroups)) {
-      const sellerSubtotal = sellerItems.reduce((s, i) => s + (Number(i.price) * Number(i.quantity)), 0);
-      const sellerDiscount = 0.00;
-      const sellerTotal = sellerSubtotal - sellerDiscount;
-
-      const [soResult] = await connection.execute(
-        `INSERT INTO seller_orders (
-          order_id, seller_id, items_subtotal, discount_total, seller_total, preparation_status
-        ) VALUES (?, ?, ?, ?, ?, 'PENDING')`,
-        [orderId, sellerId, sellerSubtotal, sellerDiscount, sellerTotal]
-      );
-      const sellerOrderId = soResult.insertId;
-
-      for (const item of sellerItems) {
-        const lineTotal = Number(item.price) * Number(item.quantity);
-        await connection.execute(
-          `INSERT INTO order_items (
-            seller_order_id, product_id, product_name_snapshot, sku_snapshot,
-            quantity, unit_price, discount_amount, line_total
-          ) VALUES (?, ?, ?, ?, ?, ?, 0.00, ?)`,
-          [sellerOrderId, item.product_id, item.product_name, item.sku, item.quantity, item.price, lineTotal]
-        );
-
-        // Deduct inventory stock
-        await connection.execute(
-          'UPDATE products SET stock_quantity = stock_quantity - ? WHERE product_id = ?',
-          [item.quantity, item.product_id]
-        );
-      }
-    }
-
-    // 8. Insert Payment record
-    const txnId = `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const paymentStatus = payment_method === 'CASH_ON_DELIVERY' ? 'PENDING' : 'SUCCESS';
-    const paidAt = payment_method === 'CASH_ON_DELIVERY' ? null : new Date();
-
-    await connection.execute(
-      `INSERT INTO payments (
-        order_id, transaction_id, payment_method, payment_provider, amount, payment_status, paid_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        orderId,
-        txnId,
-        payment_method,
-        payment_method === 'CASH_ON_DELIVERY' ? 'COD' : 'SSLCOMMERZ',
-        grandTotal,
-        paymentStatus,
-        paidAt
-      ]
-    );
-
-    // 9. Clear customer's cart
-    await connection.execute('DELETE FROM cart_items WHERE cart_id = ?', [cartId]);
-
-    await connection.commit();
     res.status(201).json({
       success: true,
-      message: 'Order placed successfully',
-      order_id: orderId,
-      total: grandTotal
+      message: result.message || 'Order placed successfully',
+      order_id: Number(result.order_id),
+      total: Number(result.total)
     });
   } catch (error) {
-    await connection.rollback();
     console.error('Order Placement Error:', error);
     res.status(500).json({ success: false, message: 'Server error during order placement: ' + error.message });
   } finally {
@@ -252,6 +128,7 @@ exports.getSellerOrders = async (req, res) => {
 };
 
 // Update seller order preparation status — ownership enforced
+// Uses explicit transaction control
 exports.updateSellerOrderStatus = async (req, res) => {
   const { status } = req.body;
   const valid = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'CANCELLED'];
@@ -259,17 +136,60 @@ exports.updateSellerOrderStatus = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid preparation status' });
   }
 
+  const connection = await db.getConnection();
   try {
-    const [result] = await db.execute(
+    await connection.beginTransaction();
+
+    const [result] = await connection.execute(
       'UPDATE seller_orders SET preparation_status = ? WHERE seller_order_id = ? AND seller_id = ?',
       [status, req.params.id, req.user.id]
     );
     if (result.affectedRows === 0) {
+      await connection.rollback();
       return res.status(404).json({ success: false, message: 'Order not found or not owned by you' });
     }
+
+    await connection.commit();
     res.json({ success: true, message: 'Preparation status updated successfully' });
   } catch (error) {
+    await connection.rollback();
     console.error('Update Seller Order Status Error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  } finally {
+    connection.release();
+  }
+};
+
+// Update overall order status — ADMIN only
+// Fires trg_order_status_audit trigger in database!
+// Uses explicit transaction control
+exports.updateOrderStatus = async (req, res) => {
+  const { status } = req.body;
+  const valid = ['PENDING_PAYMENT', 'CONFIRMED', 'PREPARING', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+  if (!status || !valid.includes(status)) {
+    return res.status(400).json({ success: false, message: 'Invalid order status: ' + valid.join(', ') });
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [result] = await connection.execute(
+      'UPDATE orders SET order_status = ? WHERE order_id = ?',
+      [status, req.params.id]
+    );
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    await connection.commit();
+    res.json({ success: true, message: `Order status updated to ${status}` });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Update Order Status Error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  } finally {
+    connection.release();
   }
 };

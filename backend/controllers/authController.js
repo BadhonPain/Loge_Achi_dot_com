@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { customerRegistrationSchema, loginSchema } = require('../schemas/authSchemas');
 
 const generateToken = (id, email, role) => {
   return jwt.sign({ id, email, role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
@@ -8,8 +9,11 @@ const generateToken = (id, email, role) => {
 
 // Register Customer
 exports.registerCustomer = async (req, res) => {
-  const { name, email, password, phone } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ message: 'Name, email and password are required' });
+  const validation = customerRegistrationSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ message: validation.error.issues[0].message, errors: validation.error.issues });
+  }
+  const { name, email, password, phone } = validation.data;
 
   try {
     const [existing] = await db.execute(
@@ -47,39 +51,13 @@ exports.registerCustomer = async (req, res) => {
   }
 };
 
-// Register Seller
-exports.registerSeller = async (req, res) => {
-  const { seller_name, shop_name, email, password, phone, address } = req.body;
-  if (!seller_name || !shop_name || !email || !password) return res.status(400).json({ message: 'seller_name, shop_name, email and password are required' });
-
-  try {
-    const [existing] = await db.execute(
-      'SELECT email FROM customers WHERE email = ? UNION SELECT email FROM sellers WHERE email = ? UNION SELECT email FROM admins WHERE email = ?',
-      [email, email, email]
-    );
-    if (existing.length > 0) return res.status(409).json({ message: 'Email already in use' });
-
-    const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(password, salt);
-
-    const [result] = await db.execute(
-      'INSERT INTO sellers (seller_name, shop_name, email, password_hash, phone, address, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [seller_name, shop_name, email, hash, phone || null, address || null, 'ACTIVE']
-    );
-
-    const token = generateToken(result.insertId, email, 'SELLER');
-    res.status(201).json({ message: 'Seller registered', token, user: { id: result.insertId, name: seller_name, email, role: 'SELLER' } });
-  } catch (error) {
-    console.error(error);
-    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'Shop name, email or phone already exists' });
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
 // Unified Login — checks admins -> sellers -> customers
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
+  const validation = loginSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ message: validation.error.issues[0].message, errors: validation.error.issues });
+  }
+  const { email, password, role: normalizedRole } = validation.data;
 
   try {
     let user = null;
@@ -105,6 +83,10 @@ exports.login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+    if (normalizedRole && normalizedRole !== role) {
+      return res.status(403).json({ message: 'This account is not registered for the selected portal' });
+    }
 
     // Role is resolved from DB — never sent by the client
     const token = generateToken(user.id, user.email, role);

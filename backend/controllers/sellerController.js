@@ -79,7 +79,9 @@ const getSellerById = async (req, res) => {
 
 
 // CREATE SELLER
+// Uses explicit transaction control
 const createSeller = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const {
             seller_name,
@@ -91,13 +93,16 @@ const createSeller = async (req, res) => {
         } = req.body;
 
         if (!seller_name || !shop_name || !email || !password_hash) {
+            connection.release();
             return res.status(400).json({
                 success: false,
                 message: "seller_name, shop_name, email and password_hash are required"
             });
         }
 
-        const [result] = await db.query(`
+        await connection.beginTransaction();
+
+        const [result] = await connection.query(`
             INSERT INTO sellers
             (
                 seller_name,
@@ -118,6 +123,8 @@ const createSeller = async (req, res) => {
             address || null
         ]);
 
+        await connection.commit();
+
         res.status(201).json({
             success: true,
             message: "Seller created successfully",
@@ -125,6 +132,7 @@ const createSeller = async (req, res) => {
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error(error);
 
         if (error.code === "ER_DUP_ENTRY") {
@@ -138,12 +146,16 @@ const createSeller = async (req, res) => {
             success: false,
             message: "Failed to create seller"
         });
+    } finally {
+        connection.release();
     }
 };
 
 
 // UPDATE SELLER
+// Uses explicit transaction control
 const updateSeller = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const sellerId = req.params.id;
 
@@ -155,7 +167,9 @@ const updateSeller = async (req, res) => {
             status
         } = req.body;
 
-        const [result] = await db.query(`
+        await connection.beginTransaction();
+
+        const [result] = await connection.query(`
             UPDATE sellers
             SET
                 seller_name = ?,
@@ -174,11 +188,14 @@ const updateSeller = async (req, res) => {
         ]);
 
         if (result.affectedRows === 0) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: "Seller not found"
             });
         }
+
+        await connection.commit();
 
         res.status(200).json({
             success: true,
@@ -186,12 +203,15 @@ const updateSeller = async (req, res) => {
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error(error);
 
         res.status(500).json({
             success: false,
             message: "Failed to update seller"
         });
+    } finally {
+        connection.release();
     }
 };
 
