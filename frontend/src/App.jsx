@@ -23,6 +23,7 @@ import WishlistPage from './pages/WishlistPage';
 import WhyLogeAchi from './pages/WhyLogeAchi';
 import FooterInfoPage from './pages/FooterInfoPage';
 import SettingsPage from './pages/SettingsPage';
+import ShoppingAssistant from './components/common/ShoppingAssistant';
 
 const ROLE_HOME = {
   ADMIN: '/admin',
@@ -94,6 +95,7 @@ function App() {
                 <Route path="/orders" element={<RequireAuth roles={['CUSTOMER']}><OrdersPage /></RequireAuth>} />
                 <Route path="/wishlist" element={<RequireAuth roles={['CUSTOMER']}><WishlistPage /></RequireAuth>} />
               </Routes>
+              <ShoppingAssistant />
             </Router>
           </CartProvider>
         </WishlistProvider>
