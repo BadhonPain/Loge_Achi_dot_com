@@ -42,15 +42,20 @@ const OrdersPage = () => {
         return <span className="badge badge-success text-white font-bold text-xs">DELIVERED</span>;
       case 'CANCELLED':
         return <span className="badge badge-error text-white font-bold text-xs">CANCELLED</span>;
+      case 'ACCEPTED':
       case 'CONFIRMED':
-        return <span className="badge badge-info text-white font-bold text-xs">CONFIRMED</span>;
+        return <span className="badge badge-info text-white font-bold text-xs">{status}</span>;
       case 'SHIPPED':
-      case 'READY_TO_SHIP':
         return <span className="badge badge-primary text-white font-bold text-xs">SHIPPED</span>;
+      case 'READY':
+      case 'READY_TO_SHIP':
+        return <span className="badge badge-primary text-white font-bold text-xs">{status === 'READY_TO_SHIP' ? 'READY TO SHIP' : status}</span>;
+      case 'PENDING':
       case 'PENDING_PAYMENT':
+        return <span className="badge badge-warning text-white font-bold text-xs">PENDING</span>;
       case 'PREPARING':
       default:
-        return <span className="badge badge-warning text-white font-bold text-xs">{status || 'PROCESSING'}</span>;
+        return <span className="badge badge-warning text-white font-bold text-xs">{status || 'PENDING'}</span>;
     }
   };
 
@@ -124,8 +129,13 @@ const OrdersPage = () => {
 
                   <div className="text-right">
                     <p className="text-2xl font-black text-primary">৳{Number(order.grand_total || order.total_amount).toLocaleString()}</p>
-                    <div className="mt-1">
-                      {getStatusBadge(order.order_status)}
+                    <div className="mt-1 flex flex-wrap justify-end gap-2">
+                      {order.seller_statuses?.length ? order.seller_statuses.map(sellerStatus => (
+                        <span key={sellerStatus.seller_order_id} className="inline-flex items-center gap-1.5">
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400">{sellerStatus.seller_name}</span>
+                          {getStatusBadge(sellerStatus.status)}
+                        </span>
+                      )) : getStatusBadge(order.order_status)}
                     </div>
                   </div>
                 </div>

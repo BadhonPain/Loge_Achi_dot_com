@@ -181,7 +181,7 @@ const CheckoutPage = () => {
             <span className="text-xs font-black tracking-widest text-green-600 uppercase mb-2 block">Payment Confirmed</span>
             <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2">Order #{orderId} Placed!</h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
-              Thank you for shopping with LogeAchi. Your order has been confirmed and forwarded to the merchants for fulfillment.
+              Thank you for shopping with LogeAchi. Your order is pending seller confirmation and will update as each seller processes it.
             </p>
 
             <div className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-4 text-left mb-8 space-y-2 text-xs border border-gray-100 dark:border-gray-800">
@@ -270,11 +270,10 @@ const CheckoutPage = () => {
                         {addresses.map(addr => (
                           <label
                             key={addr.address_id}
-                            className={`flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                              selectedAddress === addr.address_id
+                            className={`flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedAddress === addr.address_id
                                 ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
                                 : 'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
-                            }`}
+                              }`}
                           >
                             <input
                               type="radio"
@@ -415,11 +414,10 @@ const CheckoutPage = () => {
                       {paymentMethods.map(pm => (
                         <label
                           key={pm.id}
-                          className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                            paymentMethod === pm.id
+                          className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === pm.id
                               ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
                               : 'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
-                          }`}
+                            }`}
                         >
                           <input
                             type="radio"

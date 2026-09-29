@@ -12,7 +12,6 @@ import {
 
 const API_ADMIN = 'http://localhost:5000/api/admin';
 const API_ANALYTICS = 'http://localhost:5000/api/analytics';
-const API_ORDERS = 'http://localhost:5000/api/orders';
 
 const AdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -154,17 +153,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Updates overall order status, firing the trg_order_status_audit trigger
-  const updateOrderStatus = async (id, status) => {
-    try {
-      await axios.put(`${API_ORDERS}/${id}/status`, { status });
-      toast.success(`Order #${id} status updated to ${status} (Audit trigger logged)`);
-      loadData();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update order status');
-    }
-  };
-
   // View audit log written by database trigger
   const viewOrderAuditLog = async (orderId) => {
     setSelectedOrderForAudit(orderId);
@@ -194,19 +182,9 @@ const AdminDashboard = () => {
                 <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Admin Console</h1>
                 <span className="badge badge-error text-white font-bold text-xs uppercase">CSE216 Verified</span>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Platform governance, financial analytics, audit triggers & database procedures</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Platform governance, financial analytics, and order audit history</p>
             </div>
           </div>
-        </div>
-
-        {/* Database Feature Badges Bar */}
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 mb-6 text-xs font-semibold text-gray-600 dark:text-gray-300">
-          <span className="text-gray-400 font-bold uppercase tracking-wider text-[10px]">Database Architecture:</span>
-          <span className="badge badge-primary text-white text-[11px] font-bold">Explicit Transactions (COMMIT/ROLLBACK)</span>
-          <span className="badge badge-secondary text-white text-[11px] font-bold">Triggers: Stock Auto-Status + Order Audit</span>
-          <span className="badge badge-accent text-white text-[11px] font-bold">Functions: fn_seller_revenue, fn_product_avg_rating</span>
-          <span className="badge badge-neutral text-[11px] font-bold">Stored Procedures: sp_place_order, sp_seller_dashboard</span>
-          <span className="badge badge-info text-white text-[11px] font-bold">Complex Queries: Multi-table JOINs & Aggregates</span>
         </div>
 
         {/* DaisyUI Stats KPIs */}
@@ -693,7 +671,7 @@ const AdminDashboard = () => {
                 <h2 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
                   <ShoppingCart size={18} className="text-orange-500" /> Platform Orders ({orders.length})
                 </h2>
-                <p className="text-xs text-gray-400">Status changes activate Trigger <code>trg_order_status_audit</code> and log into shadow table <code>order_status_log</code></p>
+                <p className="text-xs text-gray-400">Seller-managed preparation statuses are shown here; changes are recorded in the audit trail.</p>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -703,8 +681,8 @@ const AdminDashboard = () => {
                     <th>Order #</th>
                     <th>Customer Name</th>
                     <th>Total Amount</th>
-                    <th>Current Status</th>
-                    <th>Update Status (Fires Trigger)</th>
+                    <th>Order Status</th>
+                    <th>Seller Preparation Status</th>
                     <th>Audit Trail</th>
                     <th>Date Placed</th>
                   </tr>
@@ -725,26 +703,15 @@ const AdminDashboard = () => {
                           {o.order_status}
                         </span>
                       </td>
-                      <td>
-                        <select
-                          value={o.order_status}
-                          onChange={(e) => updateOrderStatus(o.order_id, e.target.value)}
-                          className="select select-bordered select-xs rounded-lg font-semibold"
-                        >
-                          <option value="CONFIRMED">CONFIRMED</option>
-                          <option value="PREPARING">PREPARING</option>
-                          <option value="READY_TO_SHIP">READY_TO_SHIP</option>
-                          <option value="SHIPPED">SHIPPED</option>
-                          <option value="DELIVERED">DELIVERED</option>
-                          <option value="CANCELLED">CANCELLED</option>
-                        </select>
+                      <td className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                        {o.seller_statuses || 'No seller status available'}
                       </td>
                       <td>
                         <button
                           onClick={() => viewOrderAuditLog(o.order_id)}
                           className="btn btn-outline btn-xs rounded-lg font-bold gap-1 text-primary hover:bg-primary hover:text-white"
                         >
-                          <History size={12} /> View Trigger Log
+                          <History size={12} /> View Audit Trail
                         </button>
                       </td>
                       <td className="text-gray-400 text-xs">
@@ -758,7 +725,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Modal: Order Status Trigger Audit Log */}
+        {/* Modal: Order Status Audit Log */}
         {auditModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 max-w-lg w-full border border-gray-100 dark:border-gray-800 shadow-2xl">
@@ -769,9 +736,9 @@ const AdminDashboard = () => {
                   </div>
                   <div>
                     <h3 className="font-black text-gray-900 dark:text-white text-base">
-                      Trigger Audit Trail: Order #{selectedOrderForAudit}
+                      Order Status Audit Trail: Order #{selectedOrderForAudit}
                     </h3>
-                    <p className="text-xs text-gray-400">Captured by MySQL Trigger <code>trg_order_status_audit</code></p>
+                    <p className="text-xs text-gray-400">Automatically captured when a seller updates preparation status.</p>
                   </div>
                 </div>
                 <button
@@ -786,7 +753,7 @@ const AdminDashboard = () => {
                 {auditLogs.length === 0 ? (
                   <div className="text-center py-8 text-gray-400 text-sm">
                     <p>No status transitions recorded yet for this order.</p>
-                    <p className="text-xs mt-1">Change the order status using the dropdown above to trigger an audit record!</p>
+                    <p className="text-xs mt-1">Seller status changes are recorded automatically in the audit trail.</p>
                   </div>
                 ) : (
                   auditLogs.map((log) => (

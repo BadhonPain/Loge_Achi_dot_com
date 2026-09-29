@@ -16,7 +16,7 @@ exports.placeOrder = async (req, res) => {
 
   const connection = await db.getConnection();
   try {
-    // Call MySQL Stored Procedure sp_place_order (CSE216 Requirement: Multi-step transaction workflow in procedure)
+    // Call MySQL Stored Procedure sp_place_order
     await connection.query(
       'CALL sp_place_order(?, ?, ?, @order_id, @grand_total, @result_msg)',
       [customerId, address_id, payment_method]
@@ -50,15 +50,43 @@ exports.placeOrder = async (req, res) => {
 // Get my orders — CUSTOMER only, object-level ownership enforced
 exports.getMyOrders = async (req, res) => {
   try {
-    const [orders] = await db.execute(
-      `SELECT order_id, grand_total, grand_total AS total_amount, order_status, created_at,
-              shipping_name, shipping_city, shipping_address_line1
-       FROM orders
-       WHERE customer_id = ?
-       ORDER BY created_at DESC`,
+    const [rows] = await db.execute(
+      `SELECT o.order_id, o.grand_total, o.grand_total AS total_amount, o.order_status, o.created_at,
+              o.shipping_name, o.shipping_city, o.shipping_address_line1,
+              so.seller_order_id, so.preparation_status, s.shop_name AS seller_name
+       FROM orders o
+       LEFT JOIN seller_orders so ON so.order_id = o.order_id
+       LEFT JOIN sellers s ON s.seller_id = so.seller_id
+       WHERE o.customer_id = ?
+       ORDER BY o.created_at DESC, so.seller_order_id`,
       [req.user.id]
     );
-    res.json({ success: true, data: orders });
+    const ordersById = new Map();
+    for (const row of rows) {
+      let order = ordersById.get(row.order_id);
+      if (!order) {
+        order = {
+          order_id: row.order_id,
+          grand_total: row.grand_total,
+          total_amount: row.total_amount,
+          order_status: row.order_status,
+          created_at: row.created_at,
+          shipping_name: row.shipping_name,
+          shipping_city: row.shipping_city,
+          shipping_address_line1: row.shipping_address_line1,
+          seller_statuses: []
+        };
+        ordersById.set(row.order_id, order);
+      }
+      if (row.seller_order_id !== null) {
+        order.seller_statuses.push({
+          seller_order_id: row.seller_order_id,
+          seller_name: row.seller_name,
+          status: row.preparation_status
+        });
+      }
+    }
+    res.json({ success: true, data: Array.from(ordersById.values()) });
   } catch (error) {
     console.error('Get Customer Orders Error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -131,7 +159,7 @@ exports.getSellerOrders = async (req, res) => {
 // Uses explicit transaction control
 exports.updateSellerOrderStatus = async (req, res) => {
   const { status } = req.body;
-  const valid = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'CANCELLED'];
+  const valid = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
   if (!status || !valid.includes(status)) {
     return res.status(400).json({ success: false, message: 'Invalid preparation status' });
   }
@@ -160,36 +188,3 @@ exports.updateSellerOrderStatus = async (req, res) => {
   }
 };
 
-// Update overall order status — ADMIN only
-// Fires trg_order_status_audit trigger in database!
-// Uses explicit transaction control
-exports.updateOrderStatus = async (req, res) => {
-  const { status } = req.body;
-  const valid = ['PENDING_PAYMENT', 'CONFIRMED', 'PREPARING', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
-  if (!status || !valid.includes(status)) {
-    return res.status(400).json({ success: false, message: 'Invalid order status: ' + valid.join(', ') });
-  }
-
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    const [result] = await connection.execute(
-      'UPDATE orders SET order_status = ? WHERE order_id = ?',
-      [status, req.params.id]
-    );
-    if (result.affectedRows === 0) {
-      await connection.rollback();
-      return res.status(404).json({ success: false, message: 'Order not found' });
-    }
-
-    await connection.commit();
-    res.json({ success: true, message: `Order status updated to ${status}` });
-  } catch (error) {
-    await connection.rollback();
-    console.error('Update Order Status Error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  } finally {
-    connection.release();
-  }
-};

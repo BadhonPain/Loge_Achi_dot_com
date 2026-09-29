@@ -74,8 +74,8 @@ END;
 ```
 
 ### Trigger 2: `trg_order_status_audit`
-- **Timing & Event:** `AFTER UPDATE ON orders FOR EACH ROW`
-- **Purpose:** Auditing sensitive order status transitions (`PENDING` -> `SHIPPED` -> `DELIVERED` -> `CANCELLED`) to the shadow/audit table `order_status_log`.
+- **Timing & Event:** `AFTER UPDATE ON seller_orders FOR EACH ROW`
+- **Purpose:** Auditing seller-managed preparation status transitions to the shadow/audit table `order_status_log`.
 ```sql
 CREATE TABLE IF NOT EXISTS order_status_log (
     log_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -86,16 +86,16 @@ CREATE TABLE IF NOT EXISTS order_status_log (
 );
 
 CREATE TRIGGER trg_order_status_audit
-AFTER UPDATE ON orders
+AFTER UPDATE ON seller_orders
 FOR EACH ROW
 BEGIN
-    IF OLD.order_status != NEW.order_status THEN
+  IF NOT (OLD.preparation_status <=> NEW.preparation_status) THEN
         INSERT INTO order_status_log (order_id, old_status, new_status)
-        VALUES (OLD.order_id, OLD.order_status, NEW.order_status);
+    VALUES (NEW.order_id, OLD.preparation_status, NEW.preparation_status);
     END IF;
 END;
 ```
-- **Live Demo in UI:** In `AdminDashboard.jsx`, click "Update Status" on any order. The trigger executes in MySQL, records to `order_status_log`, and clicking "View Trigger Log" renders the shadow table entries!
+- **Live Demo in UI:** In `SellerDashboard.jsx`, change a seller order's preparation status. The trigger records the transition to `order_status_log`; administrators can inspect it with "View Audit Trail" in `AdminDashboard.jsx`.
 
 ---
 

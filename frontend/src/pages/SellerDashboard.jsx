@@ -576,15 +576,14 @@ const SellerDashboard = () => {
                       </td>
                       <td className="font-black text-primary text-base">৳{Number(o.seller_total).toLocaleString()}</td>
                       <td>
-                        <span className={`badge badge-sm font-bold ${
-                          o.preparation_status === 'READY'
+                        <span className={`badge badge-sm font-bold ${o.preparation_status === 'READY' || o.preparation_status === 'DELIVERED'
                             ? 'badge-success text-white'
                             : o.preparation_status === 'CANCELLED'
-                            ? 'badge-error text-white'
-                            : o.preparation_status === 'PREPARING'
-                            ? 'badge-info text-white'
-                            : 'badge-warning text-white'
-                        }`}>
+                              ? 'badge-error text-white'
+                              : o.preparation_status === 'PREPARING' || o.preparation_status === 'SHIPPED'
+                                ? 'badge-info text-white'
+                                : 'badge-warning text-white'
+                          }`}>
                           {o.preparation_status}
                         </span>
                       </td>
@@ -594,7 +593,7 @@ const SellerDashboard = () => {
                           defaultValue={o.preparation_status}
                           className="select select-bordered select-xs rounded-lg font-bold"
                         >
-                          {['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'CANCELLED'].map(s => (
+                          {['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map(s => (
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>

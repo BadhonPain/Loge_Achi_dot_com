@@ -14,6 +14,24 @@ async function applyDatabaseFeatures() {
   console.log('Connected to MySQL successfully.');
 
   try {
+    console.log('Updating seller order status constraint...');
+    const [statusConstraints] = await connection.query(`
+      SELECT CONSTRAINT_NAME
+      FROM information_schema.TABLE_CONSTRAINTS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'seller_orders'
+        AND CONSTRAINT_NAME = 'chk_seller_orders_status'
+        AND CONSTRAINT_TYPE = 'CHECK'
+    `);
+    if (statusConstraints.length > 0) {
+      await connection.query('ALTER TABLE seller_orders DROP CHECK chk_seller_orders_status');
+    }
+    await connection.query(`
+      ALTER TABLE seller_orders
+      ADD CONSTRAINT chk_seller_orders_status
+      CHECK (preparation_status IN ('PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'SHIPPED', 'DELIVERED', 'CANCELLED'))
+    `);
+
     // 1. Audit / Shadow Table for Order Status Changes
     console.log('1. Creating order_status_log table (Shadow table)...');
     await connection.query(`
@@ -46,17 +64,17 @@ async function applyDatabaseFeatures() {
     `);
     console.log('   ✓ Trigger trg_product_auto_out_of_stock created.');
 
-    // 3. Trigger 2: Order status audit trigger logging to shadow table
+    // 3. Trigger 2: Audit seller-managed order preparation status changes
     console.log('3. Creating Trigger: trg_order_status_audit...');
     await connection.query('DROP TRIGGER IF EXISTS trg_order_status_audit');
     await connection.query(`
       CREATE TRIGGER trg_order_status_audit
-      AFTER UPDATE ON orders
+      AFTER UPDATE ON seller_orders
       FOR EACH ROW
       BEGIN
-        IF OLD.order_status != NEW.order_status THEN
+        IF NOT (OLD.preparation_status <=> NEW.preparation_status) THEN
           INSERT INTO order_status_log (order_id, old_status, new_status)
-          VALUES (OLD.order_id, OLD.order_status, NEW.order_status);
+          VALUES (NEW.order_id, OLD.preparation_status, NEW.preparation_status);
         END IF;
       END
     `);
@@ -226,7 +244,7 @@ async function applyDatabaseFeatures() {
           shipping_address_line2, shipping_city, shipping_postal_code, shipping_country
         ) VALUES (
           p_customer_id, v_items_subtotal, 0, v_shipping_fee, v_grand_total,
-          'CONFIRMED', v_recipient_name, v_phone, v_addr1,
+          'PENDING_PAYMENT', v_recipient_name, v_phone, v_addr1,
           v_addr2, v_city, v_postal, COALESCE(v_country, 'Bangladesh')
         );
         

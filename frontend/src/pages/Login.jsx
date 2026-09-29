@@ -58,8 +58,15 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
-    if (!email.trim() || !password) {
-      const msg = 'Please enter your email address and password.';
+    if (!email.trim()) {
+      const msg = 'Please enter your email address .';
+      setError(msg);
+      toast.warn(msg);
+      return;
+    }
+
+    if (!password) {
+      const msg = 'Please enter your password .';
       setError(msg);
       toast.warn(msg);
       return;

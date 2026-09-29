@@ -96,7 +96,13 @@ exports.updateCustomerStatus = async (req, res) => {
 exports.getAllOrders = async (req, res) => {
   try {
     const [orders] = await db.query(`
-      SELECT o.order_id, o.customer_id, c.name AS customer_name, o.grand_total AS total_amount, o.grand_total, o.order_status, o.created_at
+      SELECT o.order_id, o.customer_id, c.name AS customer_name, o.grand_total AS total_amount, o.grand_total, o.order_status, o.created_at,
+             (
+               SELECT GROUP_CONCAT(CONCAT(s.shop_name, ': ', so.preparation_status) ORDER BY s.shop_name SEPARATOR ' | ')
+               FROM seller_orders so
+               JOIN sellers s ON s.seller_id = so.seller_id
+               WHERE so.order_id = o.order_id
+             ) AS seller_statuses
       FROM orders o JOIN customers c ON o.customer_id = c.customer_id
       ORDER BY o.created_at DESC
     `);

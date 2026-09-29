@@ -32,7 +32,7 @@ DELIMITER ;
 
 
 -- =============================================
--- TRIGGER 2: Log sensitive order status changes
+-- TRIGGER 2: Log seller-managed order preparation status changes
 -- to an audit/shadow table for accountability.
 -- =============================================
 
@@ -49,12 +49,12 @@ DROP TRIGGER IF EXISTS trg_order_status_audit;
 
 DELIMITER //
 CREATE TRIGGER trg_order_status_audit
-AFTER UPDATE ON orders
+AFTER UPDATE ON seller_orders
 FOR EACH ROW
 BEGIN
-    IF OLD.order_status != NEW.order_status THEN
+    IF NOT (OLD.preparation_status <=> NEW.preparation_status) THEN
         INSERT INTO order_status_log (order_id, old_status, new_status)
-        VALUES (OLD.order_id, OLD.order_status, NEW.order_status);
+        VALUES (NEW.order_id, OLD.preparation_status, NEW.preparation_status);
     END IF;
 END //
 DELIMITER ;
@@ -233,7 +233,7 @@ proc: BEGIN
         shipping_address_line2, shipping_city, shipping_postal_code, shipping_country
     ) VALUES (
         p_customer_id, v_items_subtotal, 0, v_shipping_fee, v_grand_total,
-        'CONFIRMED', v_recipient_name, v_phone, v_addr1,
+        'PENDING_PAYMENT', v_recipient_name, v_phone, v_addr1,
         v_addr2, v_city, v_postal, COALESCE(v_country, 'Bangladesh')
     );
     

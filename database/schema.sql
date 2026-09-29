@@ -499,6 +499,8 @@ CREATE TABLE seller_orders (
                 'ACCEPTED',
                 'PREPARING',
                 'READY',
+                'SHIPPED',
+                'DELIVERED',
                 'CANCELLED'
             )
         )
