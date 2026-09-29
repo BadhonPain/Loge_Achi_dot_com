@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react';
-import { Search, ShoppingBag, User, Menu, Heart, LogOut, Moon, Sun, Shield, Package, LayoutDashboard, X, Store, Sparkles, ChevronDown } from 'lucide-react';
+import { Search, ShoppingBag, User, Menu, Heart, LogOut, Moon, Sun, Shield, Package, LayoutDashboard, X, Store, Sparkles, ChevronDown, Settings2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -153,14 +153,22 @@ const Navbar = () => {
                   className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
                   onClick={() => setShowDropdown(!showDropdown)}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shadow-sm ${user.role === 'ADMIN'
-                    ? 'bg-red-500 text-white'
-                    : user.role === 'SELLER'
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-primary/20 text-primary'
-                    }`}>
-                    {user.name?.charAt(0).toUpperCase()}
-                  </div>
+                  {user.profile_image ? (
+                    <img
+                      src={`http://localhost:5000${user.profile_image}`}
+                      alt={`${user.name} profile`}
+                      className="w-8 h-8 rounded-full object-cover shadow-sm"
+                    />
+                  ) : (
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shadow-sm ${user.role === 'ADMIN'
+                      ? 'bg-red-500 text-white'
+                      : user.role === 'SELLER'
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-primary/20 text-primary'
+                      }`}>
+                      {user.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="hidden lg:flex flex-col text-left leading-tight">
                     <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">
                       {user.name?.split(' ')[0]}
@@ -187,6 +195,14 @@ const Navbar = () => {
                           {user.role} Account
                         </span>
                       </div>
+
+                      <Link
+                        to="/settings"
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary"
+                      >
+                        <Settings2 size={16} /> Account Settings
+                      </Link>
 
                       {/* Role-specific Dashboard Links */}
                       {user.role === 'ADMIN' && (

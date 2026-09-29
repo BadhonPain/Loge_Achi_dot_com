@@ -14,6 +14,22 @@ async function applyDatabaseFeatures() {
   console.log('Connected to MySQL successfully.');
 
   try {
+    for (const tableName of ['customers', 'sellers', 'admins']) {
+      const [[table]] = await connection.query(
+        'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
+        [tableName]
+      );
+      if (!table) continue;
+
+      const [[column]] = await connection.query(
+        'SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+        [tableName, 'profile_image']
+      );
+      if (!column) {
+        await connection.query(`ALTER TABLE ${tableName} ADD COLUMN profile_image VARCHAR(500) NULL`);
+      }
+    }
+
     console.log('Updating seller order status constraint...');
     const [statusConstraints] = await connection.query(`
       SELECT CONSTRAINT_NAME

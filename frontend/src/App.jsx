@@ -22,6 +22,7 @@ import OrdersPage from './pages/OrdersPage';
 import WishlistPage from './pages/WishlistPage';
 import WhyLogeAchi from './pages/WhyLogeAchi';
 import FooterInfoPage from './pages/FooterInfoPage';
+import SettingsPage from './pages/SettingsPage';
 
 const ROLE_HOME = {
   ADMIN: '/admin',
@@ -87,6 +88,7 @@ function App() {
                 <Route path="/categories" element={<CategoryPage />} />
                 <Route path="/admin" element={<RequireAuth roles={['ADMIN']}><AdminDashboard /></RequireAuth>} />
                 <Route path="/seller-dashboard" element={<RequireAuth roles={['SELLER']}><SellerDashboard /></RequireAuth>} />
+                <Route path="/settings" element={<RequireAuth roles={['ADMIN', 'SELLER', 'CUSTOMER']}><SettingsPage /></RequireAuth>} />
                 <Route path="/cart" element={<RequireAuth roles={['CUSTOMER']}><CartPage /></RequireAuth>} />
                 <Route path="/checkout" element={<RequireAuth roles={['CUSTOMER']}><CheckoutPage /></RequireAuth>} />
                 <Route path="/orders" element={<RequireAuth roles={['CUSTOMER']}><OrdersPage /></RequireAuth>} />

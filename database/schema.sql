@@ -21,6 +21,7 @@ CREATE TABLE sellers (
     phone VARCHAR(20) NULL,
     password_hash VARCHAR(255) NOT NULL,
     address VARCHAR(255) NULL,
+    profile_image VARCHAR(500) NULL,
 
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
 
@@ -48,6 +49,7 @@ CREATE TABLE customers (
     phone VARCHAR(20) NULL,
     password_hash VARCHAR(255) NOT NULL,
     date_of_birth DATE NULL,
+    profile_image VARCHAR(500) NULL,
 
     account_status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
 

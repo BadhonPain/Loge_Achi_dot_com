@@ -55,6 +55,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updates) => {
+    setUser((currentUser) => {
+      if (!currentUser) return currentUser;
+      const updatedUser = { ...currentUser, ...updates };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  };
+
   const logout = async () => {
     try {
       await axios.post(`${API}/auth/logout`);
@@ -66,7 +75,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, submitVendorApplication, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, submitVendorApplication, updateUser, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );
