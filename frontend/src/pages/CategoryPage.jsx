@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { ChevronRight, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -11,46 +11,61 @@ const API = 'http://localhost:5000/api';
 
 // Map slugs to display names
 const categoryMeta = {
-  'smartphones':    { name: 'Smartphones',      desc: 'Latest flagship and budget smartphones' },
-  'sneakers':       { name: "Men's Sneakers",   desc: 'Sport, casual and lifestyle footwear' },
-  'beauty':         { name: 'Beauty & Skincare', desc: 'Skincare, makeup and wellness products' },
-  'laptops':        { name: 'Laptops',           desc: 'Ultrabooks, gaming laptops and more' },
-  'watches':        { name: 'Watches',           desc: 'Smart, luxury and casual timepieces' },
-  'home-decor':     { name: 'Home Decor',        desc: 'Transform your living space' },
-  'womens-fashion': { name: "Women's Fashion",   desc: 'Trending styles for every occasion' },
-  'gaming':         { name: 'Gaming Consoles',   desc: 'Consoles, controllers and accessories' },
-  'all':            { name: 'All Categories',    desc: 'Browse everything on LogeAchi' },
+  'smartphones': { name: 'Smartphones', desc: 'Latest flagship and budget smartphones' },
+  'sneakers': { name: "Men's Sneakers", desc: 'Sport, casual and lifestyle footwear' },
+  'beauty': { name: 'Beauty & Skincare', desc: 'Skincare, makeup and wellness products' },
+  'laptops': { name: 'Laptops', desc: 'Ultrabooks, gaming laptops and more' },
+  'watches': { name: 'Watches', desc: 'Smart, luxury and casual timepieces' },
+  'home-decor': { name: 'Home Decor', desc: 'Transform your living space' },
+  'womens-fashion': { name: "Women's Fashion", desc: 'Trending styles for every occasion' },
+  'gaming': { name: 'Gaming Consoles', desc: 'Consoles, controllers and accessories' },
+  'all': { name: 'All Categories', desc: 'Browse everything on LogeAchi' },
 };
 
 const sortOptions = ['Recommended', 'Price: Low to High', 'Price: High to Low', 'Newest', 'Top Rated'];
 
 const CategoryPage = () => {
   const { slug } = useParams();
-  const meta = categoryMeta[slug] || { name: slug ? slug.replace('-', ' ') : 'All Products', desc: 'Browse products in this category' };
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q')?.trim() || '';
+  const categoryId = searchParams.get('categoryId');
 
   const [rawProducts, setRawProducts] = useState([]);
   const [sortBy, setSortBy] = useState('Recommended');
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    loadProducts();
+    let active = true;
+    axios.get(`${API}/products`)
+      .then((res) => {
+        if (!active) return;
+        if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          setRawProducts(res.data.data);
+        } else {
+          setRawProducts(allMockProducts);
+        }
+      })
+      .catch(() => {
+        if (active) setRawProducts(allMockProducts);
+      });
+    return () => { active = false; };
   }, [slug]);
 
-  const loadProducts = async () => {
-    try {
-      const res = await axios.get(`${API}/products`);
-      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setRawProducts(res.data.data);
-      } else {
-        setRawProducts(allMockProducts);
-      }
-    } catch (e) {
-      setRawProducts(allMockProducts);
-    }
-  };
-
   let products = [...rawProducts];
-  if (slug && slug !== 'all') {
+  if (categoryId) {
+    products = products.filter((product) => String(product.category_id) === categoryId);
+  }
+  if (searchQuery) {
+    const normalizedQuery = searchQuery.toLowerCase();
+    products = products.filter((product) => [
+      product.product_name,
+      product.title,
+      product.description,
+      product.category_name,
+      product.shop_name,
+      product.seller_name,
+    ].some((value) => String(value || '').toLowerCase().includes(normalizedQuery)));
+  } else if (!categoryId && slug && slug !== 'all') {
     const slugLower = slug.toLowerCase().replace('-', ' ');
     const filtered = products.filter(p => {
       const catName = (p.category_name || p.category || '').toLowerCase();
@@ -59,6 +74,15 @@ const CategoryPage = () => {
     });
     if (filtered.length > 0) products = filtered;
   }
+
+  const selectedCategory = categoryId
+    ? rawProducts.find((product) => String(product.category_id) === categoryId)?.category_name
+    : null;
+  const meta = searchQuery
+    ? { name: 'Search results', desc: `Matches for “${searchQuery}”` }
+    : selectedCategory
+      ? { name: selectedCategory, desc: 'Browse products in this department' }
+      : categoryMeta[slug] || { name: slug ? slug.replace('-', ' ') : 'All Products', desc: 'Browse products in this category' };
 
   if (sortBy === 'Price: Low to High') products.sort((a, b) => Number(a.price) - Number(b.price));
   if (sortBy === 'Price: High to Low') products.sort((a, b) => Number(b.price) - Number(a.price));
@@ -134,9 +158,15 @@ const CategoryPage = () => {
         {/* Product Grid */}
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-10">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-            {products.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {products.length > 0 ? products.map(product => (
+              <ProductCard key={product.id || product.product_id} product={product} />
+            )) : (
+              <div className="col-span-full py-20 text-center">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">No products found</h2>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Try a different search or browse all departments.</p>
+                <Link to="/categories" className="btn btn-primary mt-5 text-white">Browse all products</Link>
+              </div>
+            )}
           </div>
         </div>
       </main>

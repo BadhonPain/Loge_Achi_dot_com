@@ -12,6 +12,7 @@ const Navbar = () => {
   const { cartCount, cartTotal } = useContext(CartContext);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobile, setShowMobile] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -25,6 +26,14 @@ const Navbar = () => {
       event.preventDefault();
       toast.info('Cart and wishlist are available only to customer accounts.');
     }
+  };
+
+  const handleSearch = (event) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+    navigate(`/categories?q=${encodeURIComponent(query)}`);
+    setShowMobile(false);
   };
 
   return (
@@ -109,19 +118,22 @@ const Navbar = () => {
 
         {/* Search Bar */}
         <div className="flex-1 max-w-3xl hidden md:block">
-          <div className="relative group">
+          <form onSubmit={handleSearch} className="relative group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <Search size={18} className="text-gray-400 group-focus-within:text-primary transition-colors" />
             </div>
             <input
               type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              aria-label="Search products"
               placeholder="Search for products, brands, or vendors..."
               className="w-full bg-gray-50/70 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 focus:border-primary/50 focus:bg-white dark:focus:bg-gray-800 focus:ring-4 focus:ring-primary/10 pl-11 pr-24 py-3 rounded-full outline-none transition-all duration-300 text-sm font-medium text-gray-900 dark:text-white"
             />
-            <button className="absolute inset-y-1.5 right-1.5 bg-gray-900 dark:bg-primary hover:bg-primary text-white px-5 rounded-full text-sm font-medium transition-colors">
+            <button type="submit" className="absolute inset-y-1.5 right-1.5 bg-gray-900 dark:bg-primary hover:bg-primary text-white px-5 rounded-full text-sm font-medium transition-colors">
               Search
             </button>
-          </div>
+          </form>
         </div>
 
         {/* Actions */}
@@ -358,7 +370,13 @@ const Navbar = () => {
           </Link>
 
           {/* Mobile Menu Toggle */}
-          <button className="md:hidden p-2 text-gray-600 dark:text-gray-300" onClick={() => setShowMobile(!showMobile)}>
+          <button
+            type="button"
+            aria-label={showMobile ? 'Close menu' : 'Open menu'}
+            aria-expanded={showMobile}
+            className="md:hidden p-2 text-gray-600 dark:text-gray-300"
+            onClick={() => setShowMobile(!showMobile)}
+          >
             {showMobile ? <X size={24} strokeWidth={1.5} /> : <Menu size={24} strokeWidth={1.5} />}
           </button>
         </div>
@@ -367,10 +385,17 @@ const Navbar = () => {
       {/* Mobile Menu Overlay */}
       {showMobile && (
         <div className="md:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3 animate-fadeIn">
-          <div className="relative">
+          <form onSubmit={handleSearch} className="relative">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none text-sm" />
-          </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              aria-label="Search products"
+              placeholder="Search products..."
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none text-sm"
+            />
+          </form>
 
           <div className="grid grid-cols-3 gap-2 pt-2">
             <Link

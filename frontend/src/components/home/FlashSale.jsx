@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Timer, ArrowRight, ChevronRight, ChevronLeft } from 'lucide-react';
 import ProductCard from '../common/ProductCard';
 import { getFlashSaleProducts } from '../../data/products';
@@ -9,6 +9,9 @@ const API = 'http://localhost:5000/api';
 
 const FlashSale = () => {
   const [products, setProducts] = useState([]);
+  const saleRailRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   // Countdown Timer Logic
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 23, seconds: 15 });
 
@@ -18,8 +21,7 @@ const FlashSale = () => {
       .then((res) => {
         if (!active) return;
         if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-          // Take up to 5 products with a mock discount indicator
-          const items = res.data.data.slice(0, 5).map((product, index) => ({
+          const items = res.data.data.map((product, index) => ({
             ...product,
             discount: [15, 20, 25, 30, 40][index % 5],
             oldPrice: Math.round(Number(product.price) * 1.25)
@@ -34,6 +36,33 @@ const FlashSale = () => {
       });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    const rail = saleRailRef.current;
+    if (!rail) return undefined;
+
+    const updateArrows = () => {
+      setCanScrollLeft(rail.scrollLeft > 2);
+      setCanScrollRight(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 2);
+    };
+    const frame = requestAnimationFrame(updateArrows);
+    rail.addEventListener('scroll', updateArrows, { passive: true });
+    const observer = new ResizeObserver(updateArrows);
+    observer.observe(rail);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      rail.removeEventListener('scroll', updateArrows);
+      observer.disconnect();
+    };
+  }, [products.length]);
+
+  const scrollSaleProducts = (direction) => {
+    saleRailRef.current?.scrollBy({
+      left: direction * saleRailRef.current.clientWidth * 0.85,
+      behavior: 'smooth',
+    });
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -80,7 +109,7 @@ const FlashSale = () => {
             </div>
           </div>
 
-          <a href="#just-for-you" className="text-primary hover:text-orange-600 text-sm font-bold flex items-center gap-1 group">
+          <a href="#puja-offers" className="text-primary hover:text-orange-600 text-sm font-bold flex items-center gap-1 group">
             View All Offers <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </a>
         </div>
@@ -116,18 +145,36 @@ const FlashSale = () => {
         </div>
 
         {/* Product Grid / Carousel Layout */}
-        <div id="puja-offers" className="relative scroll-mt-28 group/slider">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+        <div id="puja-offers" className="relative scroll-mt-28">
+          <div
+            ref={saleRailRef}
+            className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:gap-6"
+          >
             {products.map((product) => (
-              <ProductCard key={product.product_id || product.id} product={product} />
+              <div key={product.product_id || product.id} className="w-[calc((100%-16px)/2)] shrink-0 snap-start sm:w-[calc((100%-32px)/3)] lg:w-[calc((100%-96px)/5)]">
+                <ProductCard product={product} />
+              </div>
             ))}
           </div>
 
-          {/* Mock Carousel Controls (for aesthetic purposes on desktop) */}
-          <button className="absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-primary opacity-0 group-hover/slider:opacity-100 transition-opacity xl:-left-5">
+          <button
+            type="button"
+            onClick={() => scrollSaleProducts(-1)}
+            disabled={!canScrollLeft}
+            aria-label="Show previous sale products"
+            title="Previous products"
+            className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-lg transition hover:text-primary disabled:pointer-events-none disabled:opacity-0 dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-200"
+          >
             <ChevronLeft size={20} />
           </button>
-          <button className="absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-primary opacity-0 group-hover/slider:opacity-100 transition-opacity xl:-right-5">
+          <button
+            type="button"
+            onClick={() => scrollSaleProducts(1)}
+            disabled={!canScrollRight}
+            aria-label="Show next sale products"
+            title="Next products"
+            className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-lg transition hover:text-primary disabled:pointer-events-none disabled:opacity-0 dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-200"
+          >
             <ChevronRight size={20} />
           </button>
         </div>
