@@ -81,8 +81,35 @@ const getProductById = async (req, res) => {
             SELECT 
                 p.*, p.product_id AS id, p.product_name AS title, p.stock_quantity AS stock,
                 s.shop_name, s.seller_name, s.email AS seller_email, s.phone AS seller_phone,
+                s.created_at AS seller_created_at,
                 c.category_name, c.category_name AS category,
                 COALESCE(fn_product_avg_rating(p.product_id), 0.0) AS rating,
+                                (SELECT COUNT(*) FROM products seller_products
+                                 WHERE seller_products.seller_id = s.seller_id AND seller_products.status != 'ARCHIVED') AS seller_product_count,
+                                (SELECT AVG(seller_reviews.rating)
+                                 FROM products reviewed_products
+                                 JOIN order_items reviewed_items ON reviewed_items.product_id = reviewed_products.product_id
+                                 JOIN reviews seller_reviews ON seller_reviews.order_item_id = reviewed_items.order_item_id
+                                 WHERE reviewed_products.seller_id = s.seller_id AND seller_reviews.review_status = 'PUBLISHED') AS seller_rating,
+                                (SELECT 100.0 * SUM(CASE WHEN TIMESTAMPDIFF(HOUR, seller_orders.created_at, shipments.shipped_at) <= 48 THEN 1 ELSE 0 END) / COUNT(*)
+                                 FROM seller_orders
+                                 JOIN shipments ON shipments.order_id = seller_orders.order_id AND shipments.shipped_at IS NOT NULL
+                                 WHERE seller_orders.seller_id = s.seller_id
+                                     AND seller_orders.preparation_status IN ('SHIPPED', 'DELIVERED')) AS dispatch_within_48h_rate,
+                                (SELECT AVG(TIMESTAMPDIFF(SECOND, customer_messages.created_at,
+                                        (SELECT MIN(seller_messages.created_at)
+                                         FROM seller_messages
+                                         WHERE seller_messages.conversation_id = customer_messages.conversation_id
+                                             AND seller_messages.sender_role = 'SELLER'
+                                             AND seller_messages.created_at > customer_messages.created_at)))
+                                 FROM seller_conversations
+                                 JOIN seller_messages customer_messages ON customer_messages.conversation_id = seller_conversations.conversation_id
+                                 WHERE seller_conversations.seller_id = s.seller_id
+                                     AND customer_messages.sender_role = 'CUSTOMER'
+                                     AND EXISTS (SELECT 1 FROM seller_messages seller_replies
+                                                             WHERE seller_replies.conversation_id = customer_messages.conversation_id
+                                                                 AND seller_replies.sender_role = 'SELLER'
+                                                                 AND seller_replies.created_at > customer_messages.created_at)) AS avg_response_seconds,
                 (
                     SELECT COUNT(*) 
                     FROM reviews r 
@@ -107,8 +134,8 @@ const getProductById = async (req, res) => {
             ORDER BY is_primary DESC, display_order ASC
         `, [productId]);
 
-        const imageUrls = images.length > 0 
-            ? images.map(img => img.image_url) 
+        const imageUrls = images.length > 0
+            ? images.map(img => img.image_url)
             : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'];
 
         // Build composite response compatible with frontend
@@ -120,9 +147,11 @@ const getProductById = async (req, res) => {
             seller: {
                 id: product.seller_id,
                 name: product.shop_name || product.seller_name,
-                rating: '4.9',
-                products: 24,
-                joined: '2024',
+                rating: product.seller_rating === null ? null : Number(product.seller_rating),
+                products: Number(product.seller_product_count || 0),
+                dispatchWithin48hRate: product.dispatch_within_48h_rate === null ? null : Number(product.dispatch_within_48h_rate),
+                avgResponseSeconds: product.avg_response_seconds === null ? null : Number(product.avg_response_seconds),
+                joined: product.seller_created_at,
             },
             features: [
                 '100% Genuine and authentic from official vendor',
@@ -230,10 +259,10 @@ const createProduct = async (req, res) => {
 
         await connection.commit();
 
-        res.status(201).json({ 
-            success: true, 
-            message: "Product created successfully and published to store!", 
-            product_id: newProductId 
+        res.status(201).json({
+            success: true,
+            message: "Product created successfully and published to store!",
+            product_id: newProductId
         });
     } catch (error) {
         await connection.rollback();

@@ -6,6 +6,8 @@ import { toast } from 'react-toastify';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { Package, ShoppingCart, Plus, Pencil, Trash2, DollarSign, Clock, Store, AlertCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
+import { SellerInbox } from '../components/common/SellerChat';
 
 const API = 'http://localhost:5000/api';
 
@@ -259,6 +261,12 @@ const SellerDashboard = () => {
             className={`tab rounded-xl font-bold text-sm px-6 transition-all ${tab === 'orders' ? 'tab-active bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
           >
             Customer Orders ({orders.length})
+          </button>
+          <button
+            onClick={() => setTab('messages')}
+            className={`tab rounded-xl font-bold text-sm px-6 transition-all ${tab === 'messages' ? 'tab-active bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+          >
+            <MessageCircle size={15} className="mr-2" /> Messages
           </button>
         </div>
 
@@ -605,6 +613,8 @@ const SellerDashboard = () => {
             </div>
           </div>
         )}
+
+        {tab === 'messages' && <SellerInbox />}
       </main>
       <Footer />
     </div>

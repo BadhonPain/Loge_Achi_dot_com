@@ -10,6 +10,7 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { getProductById as getMockProductById } from '../data/products';
 import { reviewSubmissionSchema } from '../schemas/reviewSchemas';
+import { SellerChatDialog } from '../components/common/SellerChat';
 
 const API = 'http://localhost:5000/api';
 
@@ -27,6 +28,8 @@ const ProductDetails = () => {
   const [reviewSubmitError, setReviewSubmitError] = useState('');
   const [vendorProducts, setVendorProducts] = useState([]);
   const [showVendorModal, setShowVendorModal] = useState(false);
+  const [chatConversationId, setChatConversationId] = useState(null);
+  const [startingChat, setStartingChat] = useState(false);
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState(0);
@@ -83,8 +86,10 @@ const ProductDetails = () => {
           seller: p.seller || {
             id: p.seller_id,
             name: p.shop_name || p.seller_name || 'Official Store',
-            rating: '4.9',
-            products: 15
+            rating: null,
+            products: null,
+            dispatchWithin48hRate: null,
+            avgResponseSeconds: null,
           }
         };
         setProduct(normalized);
@@ -93,7 +98,16 @@ const ProductDetails = () => {
       console.warn('Backend fetch failed, falling back to mock product:', err.message);
       const mock = getMockProductById(id);
       if (mock) {
-        setProduct(mock);
+        setProduct({
+          ...mock,
+          seller: {
+            ...mock.seller,
+            rating: null,
+            products: null,
+            dispatchWithin48hRate: null,
+            avgResponseSeconds: null,
+          },
+        });
       } else {
         setProduct(null);
       }
@@ -179,6 +193,43 @@ const ProductDetails = () => {
     } catch {
       toast.info(`Viewing ${product.seller.name} store`);
     }
+  };
+
+  const handleStartChat = async () => {
+    if (!user) {
+      toast.info('Sign in with a customer account to contact this seller.');
+      navigate('/login?role=customer');
+      return;
+    }
+    if (user.role !== 'CUSTOMER') {
+      toast.info('Seller chat is available to customer accounts.');
+      return;
+    }
+    if (!product.seller?.id) {
+      toast.error('Seller chat is unavailable for this product.');
+      return;
+    }
+
+    setStartingChat(true);
+    try {
+      const response = await axios.post(`${API}/messages/conversations`, {
+        seller_id: product.seller.id,
+        product_id: product.product_id || product.id,
+      });
+      setChatConversationId(response.data.data.conversation_id);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Could not open seller chat.');
+    } finally {
+      setStartingChat(false);
+    }
+  };
+
+  const formatResponseTime = (seconds) => {
+    if (seconds === null || seconds === undefined) return 'No data yet';
+    if (seconds < 60) return '< 1 min';
+    if (seconds < 3600) return `${Math.round(seconds / 60)} min`;
+    if (seconds < 86400) return `${(seconds / 3600).toFixed(1)} hrs`;
+    return `${(seconds / 86400).toFixed(1)} days`;
   };
 
   const handleAddToCart = async () => {
@@ -477,25 +528,28 @@ const ProductDetails = () => {
                     <div>
                       <p className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                         {product.seller.name}
-                        <span className="badge badge-xs badge-success text-white">Verified</span>
                       </p>
                       <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         <Star size={12} className="fill-amber-400 text-amber-400" />
-                        <span className="font-bold">{product.seller.rating}</span>
+                        <span className="font-bold">{product.seller.rating === null ? 'New shop' : Number(product.seller.rating).toFixed(1)}</span>
                         <span className="mx-1">·</span>
-                        <span>{product.seller.products} products</span>
+                        <span>{product.seller.products ?? '—'} products</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 mb-5">
                     <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3 text-center">
-                      <p className="text-[11px] text-gray-400 uppercase tracking-wider">Ship on Time</p>
-                      <p className="font-extrabold text-gray-900 dark:text-white text-sm mt-0.5">98.5%</p>
+                      <p className="text-[11px] text-gray-400 uppercase tracking-wider">Shipped ≤48h</p>
+                      <p className="font-extrabold text-gray-900 dark:text-white text-sm mt-0.5">
+                        {product.seller.dispatchWithin48hRate === null ? 'No data yet' : `${Number(product.seller.dispatchWithin48hRate).toFixed(0)}%`}
+                      </p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3 text-center">
-                      <p className="text-[11px] text-gray-400 uppercase tracking-wider">Response</p>
-                      <p className="font-extrabold text-gray-900 dark:text-white text-sm mt-0.5">&lt; 1 hour</p>
+                      <p className="text-[11px] text-gray-400 uppercase tracking-wider">Avg response</p>
+                      <p className="font-extrabold text-gray-900 dark:text-white text-sm mt-0.5">
+                        {formatResponseTime(product.seller.avgResponseSeconds)}
+                      </p>
                     </div>
                   </div>
 
@@ -507,10 +561,11 @@ const ProductDetails = () => {
                       <Store size={15} /> Visit Store ({product.seller.name})
                     </button>
                     <button
-                      onClick={() => toast.info(`Connecting to ${product.seller.name} customer service...`)}
+                      onClick={handleStartChat}
+                      disabled={startingChat}
                       className="btn btn-ghost btn-sm w-full rounded-xl gap-2 text-gray-600 dark:text-gray-300 font-medium"
                     >
-                      <MessageCircle size={15} /> Chat with Vendor
+                      <MessageCircle size={15} /> {startingChat ? 'Opening chat...' : 'Chat with seller'}
                     </button>
                   </div>
                 </div>
@@ -726,6 +781,14 @@ const ProductDetails = () => {
       </main>
 
       <Footer />
+      {chatConversationId && (
+        <SellerChatDialog
+          conversationId={chatConversationId}
+          sellerName={product.seller.name}
+          productName={product.product_name || product.title}
+          onClose={() => setChatConversationId(null)}
+        />
+      )}
     </div>
   );
 };
