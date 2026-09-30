@@ -3,9 +3,10 @@ const db = require('../config/db');
 const getConversationForUser = async (conversationId, user) => {
     const ownerColumn = user.role === 'CUSTOMER' ? 'customer_id' : 'seller_id';
     const [rows] = await db.query(`
-    SELECT conversation_id, customer_id, seller_id, product_id
-    FROM seller_conversations
-    WHERE conversation_id = ? AND ${ownerColumn} = ?
+    SELECT c.conversation_id, c.customer_id, c.seller_id, c.product_id, s.shop_name
+    FROM seller_conversations c
+    JOIN sellers s ON s.seller_id = c.seller_id
+    WHERE c.conversation_id = ? AND c.${ownerColumn} = ?
   `, [conversationId, user.id]);
     return rows[0];
 };
@@ -95,6 +96,7 @@ exports.getMessages = async (req, res) => {
 };
 
 exports.sendMessage = async (req, res) => {
+    let connection;
     try {
         const messageBody = typeof req.body.message_body === 'string' ? req.body.message_body.trim() : '';
         if (!messageBody || messageBody.length > 2000) {
@@ -106,16 +108,35 @@ exports.sendMessage = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Conversation not found' });
         }
 
+        connection = await db.getConnection();
+        await connection.beginTransaction();
         const senderCustomerId = req.user.role === 'CUSTOMER' ? req.user.id : null;
         const senderSellerId = req.user.role === 'SELLER' ? req.user.id : null;
-        const [result] = await db.query(`
+        const [result] = await connection.query(`
       INSERT INTO seller_messages (conversation_id, sender_role, sender_customer_id, sender_seller_id, message_body)
       VALUES (?, ?, ?, ?, ?)
     `, [conversation.conversation_id, req.user.role, senderCustomerId, senderSellerId, messageBody]);
-        await db.query(
+        await connection.query(
             'UPDATE seller_conversations SET last_message_at = CURRENT_TIMESTAMP WHERE conversation_id = ?',
             [conversation.conversation_id]
         );
+
+        if (req.user.role === 'SELLER') {
+            await connection.query(`
+                INSERT INTO customer_notifications
+                    (customer_id, notification_type, title, body, seller_id, conversation_id, message_id)
+                VALUES (?, 'SELLER_REPLY', ?, ?, ?, ?, ?)
+            `, [
+                conversation.customer_id,
+                `New message from ${conversation.shop_name}`,
+                messageBody.length > 180 ? `${messageBody.slice(0, 177)}...` : messageBody,
+                conversation.seller_id,
+                conversation.conversation_id,
+                result.insertId,
+            ]);
+        }
+
+        await connection.commit();
 
         const [messages] = await db.query(`
       SELECT m.message_id, m.sender_role, m.sender_customer_id, m.sender_seller_id,
@@ -129,7 +150,10 @@ exports.sendMessage = async (req, res) => {
 
         res.status(201).json({ success: true, data: messages[0] });
     } catch (error) {
+        if (connection) await connection.rollback();
         console.error('Send Message Error:', error);
         res.status(500).json({ success: false, message: 'Could not send message' });
+    } finally {
+        connection?.release();
     }
 };

@@ -5,6 +5,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { CartContext } from '../../context/CartContext';
 import { toast } from 'react-toastify';
+import NotificationCenter from '../common/NotificationCenter';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
@@ -138,6 +139,8 @@ const Navbar = () => {
 
         {/* Actions */}
         <div className="flex items-center gap-4 shrink-0">
+          {user?.role === 'CUSTOMER' && <NotificationCenter />}
+
           {/* Dark Mode Toggle */}
           <button
             onClick={toggle}

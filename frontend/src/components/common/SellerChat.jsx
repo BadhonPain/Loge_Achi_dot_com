@@ -5,7 +5,7 @@ import { AuthContext } from '../../context/AuthContext';
 
 const API = 'http://localhost:5000/api';
 
-const ConversationThread = ({ conversationId, otherName, productName, onMessageSent }) => {
+export const ConversationThread = ({ conversationId, otherName, productName, onMessageSent }) => {
     const { user } = useContext(AuthContext);
     const [messages, setMessages] = useState([]);
     const [messageBody, setMessageBody] = useState('');

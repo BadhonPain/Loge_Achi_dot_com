@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Navbar from '../components/layout/Navbar';
@@ -12,6 +12,8 @@ const API = 'http://localhost:5000/api';
 const OrdersPage = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const highlightedOrderId = searchParams.get('orderId');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,6 +23,12 @@ const OrdersPage = () => {
     if (user.role !== 'CUSTOMER') { navigate('/'); return; }
     loadOrders();
   }, [user]);
+
+  useEffect(() => {
+    if (!loading && highlightedOrderId) {
+      document.getElementById(`order-${highlightedOrderId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [loading, highlightedOrderId]);
 
   const loadOrders = async () => {
     try {
@@ -104,7 +112,13 @@ const OrdersPage = () => {
         ) : (
           <div className="space-y-4">
             {orders.map(order => (
-              <div key={order.order_id} className="card bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 hover:shadow-md transition-shadow">
+              <div
+                id={`order-${order.order_id}`}
+                key={order.order_id}
+                className={`card rounded-2xl border p-6 transition-shadow hover:shadow-md ${String(highlightedOrderId) === String(order.order_id)
+                  ? 'border-primary/60 bg-primary/[0.035] ring-2 ring-primary/20 dark:bg-primary/[0.08]'
+                  : 'border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900'}`}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-primary flex items-center justify-center shadow-sm">
