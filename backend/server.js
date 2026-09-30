@@ -18,6 +18,8 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
 const vendorApplicationRoutes = require('./routes/vendorApplicationRoutes');
 const assistantRoutes = require('./routes/assistantRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +47,8 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/vendor-applications', vendorApplicationRoutes);
 app.use('/api/assistant', assistantRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Loge Achi API is running' });

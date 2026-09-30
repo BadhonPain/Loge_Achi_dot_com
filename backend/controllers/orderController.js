@@ -168,13 +168,40 @@ exports.updateSellerOrderStatus = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const [result] = await connection.execute(
+    const [sellerOrders] = await connection.execute(
+      `SELECT so.order_id, so.preparation_status, o.customer_id, s.shop_name
+       FROM seller_orders so
+       JOIN orders o ON o.order_id = so.order_id
+       JOIN sellers s ON s.seller_id = so.seller_id
+       WHERE so.seller_order_id = ? AND so.seller_id = ?
+       FOR UPDATE`,
+      [req.params.id, req.user.id]
+    );
+    if (sellerOrders.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Order not found or not owned by you' });
+    }
+    const sellerOrder = sellerOrders[0];
+
+    await connection.execute(
       'UPDATE seller_orders SET preparation_status = ? WHERE seller_order_id = ? AND seller_id = ?',
       [status, req.params.id, req.user.id]
     );
-    if (result.affectedRows === 0) {
-      await connection.rollback();
-      return res.status(404).json({ success: false, message: 'Order not found or not owned by you' });
+
+    if (sellerOrder.preparation_status !== status) {
+      await connection.execute(
+        `INSERT INTO customer_notifications
+          (customer_id, notification_type, title, body, order_id, seller_order_id, seller_id)
+         VALUES (?, 'ORDER_STATUS', ?, ?, ?, ?, ?)`,
+        [
+          sellerOrder.customer_id,
+          `${sellerOrder.shop_name} updated an order`,
+          `Order #${sellerOrder.order_id} is now ${status.replaceAll('_', ' ').toLowerCase()}.`,
+          sellerOrder.order_id,
+          req.params.id,
+          req.user.id,
+        ]
+      );
     }
 
     await connection.commit();
