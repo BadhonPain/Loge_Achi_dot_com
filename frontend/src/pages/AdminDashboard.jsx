@@ -180,7 +180,6 @@ const AdminDashboard = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Admin Console</h1>
-                <span className="badge badge-error text-white font-bold text-xs uppercase">CSE216 Verified</span>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Platform governance, financial analytics, and order audit history</p>
             </div>
@@ -247,7 +246,7 @@ const AdminDashboard = () => {
                 }`}
             >
               {t === 'overview' ? 'Overview' :
-                t === 'analytics' ? '📊 Analytics & Complex Queries' :
+                t === 'analytics' ? '📊 Analytics' :
                   `${t} (${t === 'customers' ? customers.length : t === 'sellers' ? sellers.length : t === 'applications' ? applications.filter((application) => !['APPROVED', 'REJECTED'].includes(application.status)).length : orders.length})`}
             </button>
           ))}
@@ -314,30 +313,24 @@ const AdminDashboard = () => {
         )}
 
         {/* ============================================= */}
-        {/* ANALYTICS TAB: COMPLEX QUERIES DEMONSTRATION */}
+        {/* ANALYTICS TAB */}
         {/* ============================================= */}
         {tab === 'analytics' && (
           <div className="space-y-8 mb-8">
-            {/* Header info */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-3xl p-6 shadow-md">
               <h2 className="text-xl font-black mb-1 flex items-center gap-2">
-                <BarChart3 size={24} /> Complex Queries & Stored Database Functions
+                <BarChart3 size={24} /> Analytics
               </h2>
-              <p className="text-blue-100 text-sm">
-                Demonstrating multi-table joins, SQL aggregate functions (SUM, AVG, COUNT), correlated subqueries, and stored functions (fn_seller_revenue, fn_product_avg_rating).
-              </p>
             </div>
 
-            {/* Query 1: Top Selling Products */}
+            {/* Top Selling Products */}
             <div className="card bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    <Award size={20} className="text-amber-500" /> Complex Query 1: Top Selling Products
+                    <Award size={20} className="text-amber-500" /> Top Selling Products
                   </h3>
-                  <p className="text-xs text-gray-400">Multi-table JOIN (products + sellers + categories + order_items + orders + reviews) with aggregation & fn_product_avg_rating()</p>
                 </div>
-                <span className="badge badge-sm badge-warning font-bold">Aggregates + Stored Function</span>
               </div>
 
               <div className="overflow-x-auto">
@@ -377,16 +370,14 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Query 2: Top Sellers by Revenue */}
+            {/* Top Sellers by Revenue */}
             <div className="card bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    <TrendingUp size={20} className="text-green-500" /> Complex Query 2: Top Merchants by Revenue
+                    <TrendingUp size={20} className="text-green-500" /> Top Merchants by Revenue
                   </h3>
-                  <p className="text-xs text-gray-400">Uses SQL Stored Function <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded font-mono">fn_seller_revenue(seller_id)</code> with multi-table aggregation</p>
                 </div>
-                <span className="badge badge-sm badge-success font-bold text-white">fn_seller_revenue()</span>
               </div>
 
               <div className="overflow-x-auto">
@@ -422,16 +413,14 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Query 3: Category Sales Analytics */}
+            {/* Category Sales Analytics */}
             <div className="card bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    <Layers size={20} className="text-purple-500" /> Complex Query 3: Category Sales Performance
+                    <Layers size={20} className="text-purple-500" /> Category Sales Performance
                   </h3>
-                  <p className="text-xs text-gray-400">Multi-table aggregation with Correlated Subquery for best selling product per category</p>
                 </div>
-                <span className="badge badge-sm badge-secondary font-bold text-white">Correlated Subquery</span>
               </div>
 
               <div className="overflow-x-auto">
@@ -462,14 +451,13 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Query 4: Monthly Revenue Trend & Query 5: Customer Analytics */}
+            {/* Monthly Revenue Trend & Customer Analytics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Monthly Trend */}
               <div className="card bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
                 <h3 className="text-base font-black text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                  <BarChart3 size={18} className="text-primary" /> Complex Query 4: Monthly Revenue Trend
+                  <BarChart3 size={18} className="text-primary" /> Monthly Revenue Trend
                 </h3>
-                <p className="text-xs text-gray-400 mb-4">Date manipulation (DATE_FORMAT) with temporal group aggregation</p>
                 <div className="overflow-x-auto">
                   <table className="table table-sm w-full text-xs">
                     <thead>
@@ -502,9 +490,8 @@ const AdminDashboard = () => {
               {/* Customer Analytics */}
               <div className="card bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
                 <h3 className="text-base font-black text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Users size={18} className="text-blue-500" /> Complex Query 5: Customer Lifetime Analytics
+                  <Users size={18} className="text-blue-500" /> Customer Lifetime Analytics
                 </h3>
-                <p className="text-xs text-gray-400 mb-4">Multi-table JOIN (customers + orders + wishlist_items) with user aggregation</p>
                 <div className="overflow-x-auto">
                   <table className="table table-sm w-full text-xs">
                     <thead>

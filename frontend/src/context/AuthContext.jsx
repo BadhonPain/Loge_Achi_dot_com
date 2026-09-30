@@ -18,6 +18,20 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    const syncUserAcrossTabs = (event) => {
+      if (event.key !== 'user') return;
+      try {
+        setUser(event.newValue ? JSON.parse(event.newValue) : null);
+      } catch {
+        setUser(null);
+      }
+    };
+
+    window.addEventListener('storage', syncUserAcrossTabs);
+    return () => window.removeEventListener('storage', syncUserAcrossTabs);
+  }, []);
+
   const login = async (email, password, role) => {
     try {
       const res = await axios.post(`${API}/auth/login`, { email, password, role });

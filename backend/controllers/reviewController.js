@@ -10,7 +10,7 @@ exports.getEligibleReviewItems = async (req, res) => {
       JOIN orders o ON so.order_id = o.order_id
       LEFT JOIN reviews r ON r.order_item_id = oi.order_item_id
       WHERE oi.product_id = ? AND o.customer_id = ?
-        AND o.order_status = 'DELIVERED' AND r.review_id IS NULL
+        AND so.preparation_status = 'DELIVERED' AND r.review_id IS NULL
       ORDER BY o.created_at DESC
     `, [req.params.productId, req.user.id]);
     res.json({ success: true, data: items });
@@ -42,7 +42,7 @@ exports.createReview = async (req, res) => {
 
     // Verify customer owns this order item (object-level ownership)
     const [ownership] = await connection.execute(`
-      SELECT oi.order_item_id, o.order_status
+      SELECT oi.order_item_id, so.preparation_status
       FROM order_items oi
       JOIN seller_orders so ON oi.seller_order_id = so.seller_order_id
       JOIN orders o ON so.order_id = o.order_id
@@ -54,7 +54,7 @@ exports.createReview = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden: You do not own this order item' });
     }
 
-    if (ownership[0].order_status !== 'DELIVERED') {
+    if (ownership[0].preparation_status !== 'DELIVERED') {
       await connection.rollback();
       return res.status(400).json({ success: false, message: 'You can only review delivered orders' });
     }

@@ -1,7 +1,4 @@
--- =============================================
--- LogeAchi E-Commerce: Triggers, Functions & Procedures
--- CSE216 Project Requirements
--- =============================================
+
 
 USE loge_achi_db;
 

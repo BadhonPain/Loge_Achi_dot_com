@@ -207,12 +207,6 @@ const SellerDashboard = () => {
           </button>
         </div>
 
-        {/* Database Feature Indicator */}
-        <div className="flex items-center gap-2 p-2.5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 mb-6 text-xs text-gray-500">
-          <span className="badge badge-neutral text-[10px] font-bold">sp_seller_dashboard()</span>
-          <span>Metrics computed live by MySQL Stored Procedure and SQL Function <code>fn_seller_revenue()</code></span>
-        </div>
-
         {/* DaisyUI Stats Overview */}
         <div className="stats stats-vertical lg:steps-horizontal lg:stats-horizontal shadow-sm bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 w-full mb-8 rounded-3xl">
           <div className="stat">
@@ -239,7 +233,7 @@ const SellerDashboard = () => {
             </div>
             <div className="stat-title text-xs font-bold text-gray-400 uppercase tracking-wider">Store Revenue</div>
             <div className="stat-value text-green-600">৳{totalRevenue.toLocaleString()}</div>
-            <div className="stat-desc text-xs mt-1">Calculated via fn_seller_revenue()</div>
+            <div className="stat-desc text-xs mt-1">Revenue from your sales</div>
           </div>
 
           <div className="stat">
@@ -577,12 +571,12 @@ const SellerDashboard = () => {
                       <td className="font-black text-primary text-base">৳{Number(o.seller_total).toLocaleString()}</td>
                       <td>
                         <span className={`badge badge-sm font-bold ${o.preparation_status === 'READY' || o.preparation_status === 'DELIVERED'
-                            ? 'badge-success text-white'
-                            : o.preparation_status === 'CANCELLED'
-                              ? 'badge-error text-white'
-                              : o.preparation_status === 'PREPARING' || o.preparation_status === 'SHIPPED'
-                                ? 'badge-info text-white'
-                                : 'badge-warning text-white'
+                          ? 'badge-success text-white'
+                          : o.preparation_status === 'CANCELLED'
+                            ? 'badge-error text-white'
+                            : o.preparation_status === 'PREPARING' || o.preparation_status === 'SHIPPED'
+                              ? 'badge-info text-white'
+                              : 'badge-warning text-white'
                           }`}>
                           {o.preparation_status}
                         </span>
