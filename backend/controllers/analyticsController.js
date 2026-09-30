@@ -1,9 +1,6 @@
 const db = require('../config/db');
 
-// =============================================
-// COMPLEX QUERY 1: Top Selling Products
-// Multi-table JOIN with aggregation
-// =============================================
+// complex query 1
 exports.getTopSellingProducts = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
@@ -40,10 +37,7 @@ exports.getTopSellingProducts = async (req, res) => {
   }
 };
 
-// =============================================
-// COMPLEX QUERY 2: Top Sellers by Revenue
-// Multi-table JOIN with aggregation using DB function
-// =============================================
+// complex query 2
 exports.getTopSellers = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
@@ -76,10 +70,7 @@ exports.getTopSellers = async (req, res) => {
   }
 };
 
-// =============================================
-// COMPLEX QUERY 3: Category-wise Sales Analytics
-// Multi-table JOIN with aggregation and subquery
-// =============================================
+// complex query 3
 exports.getCategorySalesAnalytics = async (req, res) => {
   try {
     const [categories] = await db.query(`
@@ -116,10 +107,7 @@ exports.getCategorySalesAnalytics = async (req, res) => {
   }
 };
 
-// =============================================
-// COMPLEX QUERY 4: Monthly Revenue Trend
-// Aggregation with date functions
-// =============================================
+// complex query 4
 exports.getMonthlyRevenueTrend = async (req, res) => {
   try {
     const months = parseInt(req.query.months) || 12;
@@ -144,10 +132,7 @@ exports.getMonthlyRevenueTrend = async (req, res) => {
   }
 };
 
-// =============================================
-// COMPLEX QUERY 5: Customer Order Summary
-// Multi-table with aggregation — customer analytics
-// =============================================
+// complex query 5
 exports.getCustomerAnalytics = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
