@@ -7,7 +7,7 @@ import ProductCard from '../components/common/ProductCard';
 import allMockProducts from '../data/products';
 import axios from 'axios';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Map slugs to display names
 const categoryMeta = {

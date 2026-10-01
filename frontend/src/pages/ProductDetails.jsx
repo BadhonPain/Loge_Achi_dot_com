@@ -12,7 +12,7 @@ import { getProductById as getMockProductById } from '../data/products';
 import { reviewSubmissionSchema } from '../schemas/reviewSchemas';
 import { SellerChatDialog } from '../components/common/SellerChat';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const ProductDetails = () => {
   const { id } = useParams();

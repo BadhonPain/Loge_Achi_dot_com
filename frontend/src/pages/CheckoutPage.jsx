@@ -8,7 +8,7 @@ import Footer from '../components/layout/Footer';
 import { MapPin, CreditCard, Truck, CheckCircle, Plus, ChevronRight, AlertCircle, ShoppingBag, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const CheckoutPage = () => {
   const { user } = useContext(AuthContext);
@@ -271,8 +271,8 @@ const CheckoutPage = () => {
                           <label
                             key={addr.address_id}
                             className={`flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedAddress === addr.address_id
-                                ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
-                                : 'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
+                              ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
+                              : 'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
                               }`}
                           >
                             <input
@@ -415,8 +415,8 @@ const CheckoutPage = () => {
                         <label
                           key={pm.id}
                           className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === pm.id
-                              ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
-                              : 'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
+                            ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
+                            : 'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
                             }`}
                         >
                           <input

@@ -5,7 +5,7 @@ import { getFlashSaleProducts } from '../../data/products';
 import axios from 'axios';
 import pujaSaleArtwork from '../../assets/Durga-Puja-Flash-Sale.png';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const FlashSale = () => {
   const [products, setProducts] = useState([]);

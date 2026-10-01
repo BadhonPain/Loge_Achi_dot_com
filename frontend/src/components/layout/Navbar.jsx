@@ -7,6 +7,9 @@ import { CartContext } from '../../context/CartContext';
 import { toast } from 'react-toastify';
 import NotificationCenter from '../common/NotificationCenter';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const SERVER = API_BASE.replace(/\/api\/?$/, '');
+
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
   const { isDark, toggle } = useTheme();
@@ -170,7 +173,7 @@ const Navbar = () => {
                 >
                   {user.profile_image ? (
                     <img
-                      src={`http://localhost:5000${user.profile_image}`}
+                      src={`${SERVER}${user.profile_image}`}
                       alt={`${user.name} profile`}
                       className="w-8 h-8 rounded-full object-cover shadow-sm"
                     />

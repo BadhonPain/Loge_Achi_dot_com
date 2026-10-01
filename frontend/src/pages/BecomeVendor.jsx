@@ -8,7 +8,7 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { vendorApplicationSchema } from '../schemas/authSchemas';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const initialForm = {
     full_name: '', email: '', phone: '', password: '', confirm_password: '',
     store_name: '', category_id: '', business_description: '', address: '',

@@ -21,7 +21,7 @@ const CategoryMenu = () => {
 
   useEffect(() => {
     let active = true;
-    axios.get('http://localhost:5000/api/categories')
+    axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories`)
       .then(({ data }) => {
         if (active) setCategories((data.data || []).filter((category) => category.status === 'ACTIVE'));
       })

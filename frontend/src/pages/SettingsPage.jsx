@@ -6,8 +6,8 @@ import { AuthContext } from '../context/AuthContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
-const API = 'http://localhost:5000/api';
-const SERVER = 'http://localhost:5000';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const SERVER = API.replace(/\/api\/?$/, '');
 
 const SettingsPage = () => {
     const { user, updateUser } = useContext(AuthContext);

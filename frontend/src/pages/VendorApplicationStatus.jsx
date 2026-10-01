@@ -5,7 +5,7 @@ import { AlertCircle, ArrowRight, CheckCircle2, Clock3, LoaderCircle, Store } fr
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const STATUS_COPY = {
     PENDING: { title: 'Application Submitted', detail: 'Your application is in the review queue.', icon: Clock3 },

@@ -10,8 +10,9 @@ import {
   Ban, AlertCircle, BarChart3, TrendingUp, Award, Layers, History, X
 } from 'lucide-react';
 
-const API_ADMIN = 'http://localhost:5000/api/admin';
-const API_ANALYTICS = 'http://localhost:5000/api/analytics';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_ADMIN = `${API_BASE}/admin`;
+const API_ANALYTICS = `${API_BASE}/analytics`;
 
 const AdminDashboard = () => {
   const { user } = useContext(AuthContext);

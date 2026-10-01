@@ -3,7 +3,7 @@ import { Bot, MessageCircle, Send, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-const API = 'http://localhost:5000/api/assistant/chat';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/assistant/chat`;
 const starterPrompts = [
     'Find a gift under ৳2,000',
     'Show me tech for daily use',

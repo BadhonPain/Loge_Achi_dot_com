@@ -3,7 +3,7 @@ import { ShieldCheck, ArrowRight, Store } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const defaultVendorImages = [
   'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop',
@@ -50,7 +50,7 @@ const OfficialMall = () => {
   return (
     <section className="py-12 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
-        
+
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
           <div>
             <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -59,7 +59,7 @@ const OfficialMall = () => {
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">100% Authentic Brands & Top Verified Vendors</p>
           </div>
-          
+
           <span className="badge badge-success text-white font-bold text-xs">
             {sellers.length} Verified Vendors
           </span>
@@ -67,17 +67,17 @@ const OfficialMall = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {sellers.map((seller, idx) => (
-            <div 
-              key={seller.seller_id} 
+            <div
+              key={seller.seller_id}
               onClick={() => handleOpenStore(seller)}
               className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 dark:border-gray-800 group cursor-pointer"
             >
               {/* Product Banner */}
               <div className="h-44 relative overflow-hidden bg-gray-100 dark:bg-gray-800">
-                <img 
-                  src={defaultVendorImages[idx % defaultVendorImages.length]} 
+                <img
+                  src={defaultVendorImages[idx % defaultVendorImages.length]}
                   alt={seller.shop_name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div className="absolute bottom-3 right-3">
@@ -86,7 +86,7 @@ const OfficialMall = () => {
                   </span>
                 </div>
               </div>
-              
+
               {/* Brand Logo & Info */}
               <div className="p-5 flex items-center gap-4 relative">
                 <div className="w-14 h-14 rounded-2xl bg-white dark:bg-gray-800 shadow-md p-2 absolute -top-8 left-5 border border-gray-100 dark:border-gray-700 flex items-center justify-center overflow-hidden z-10 text-primary">
@@ -123,7 +123,7 @@ const OfficialMall = () => {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setModalOpen(false)}
                 className="btn btn-circle btn-sm btn-ghost"
               >
@@ -134,7 +134,7 @@ const OfficialMall = () => {
             <div className="p-6 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {sellerProducts.map((p) => (
-                  <div 
+                  <div
                     key={p.product_id}
                     onClick={() => {
                       setModalOpen(false);
@@ -143,9 +143,9 @@ const OfficialMall = () => {
                     className="card bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 cursor-pointer hover:shadow-md transition-all group"
                   >
                     <div className="aspect-square rounded-xl overflow-hidden mb-2 bg-white dark:bg-gray-900">
-                      <img 
-                        src={p.primary_image || p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'} 
-                        alt={p.product_name} 
+                      <img
+                        src={p.primary_image || p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600&auto=format&fit=crop'}
+                        alt={p.product_name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />
                     </div>

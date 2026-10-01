@@ -9,7 +9,7 @@ import { Package, ShoppingCart, Plus, Pencil, Trash2, DollarSign, Clock, Store, 
 import { MessageCircle } from 'lucide-react';
 import { SellerInbox } from '../components/common/SellerChat';
 
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const emptyImageUrls = ['', '', '', '', ''];
 const isValidImageUrl = (url) => /^https?:\/\/.+/i.test(url.trim());
