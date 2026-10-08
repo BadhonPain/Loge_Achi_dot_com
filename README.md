@@ -17,6 +17,11 @@
 
 Loge Achi is a full-stack e-commerce platform connecting customers and sellers through a single shopping experience. Explore a product catalog, manage orders, apply to become a seller, and run marketplace operations through dedicated role-based dashboards.
 
+### 🎥 Project Showcase
+
+**Watch the `Loge Achi dot com` project on YouTube:**
+[▶️ View Project Demo on YouTube](https://youtu.be/PPiLMk2-yvg)
+
 ## ✨ What you can do
 
 <table>
